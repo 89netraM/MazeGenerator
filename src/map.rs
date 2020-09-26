@@ -100,6 +100,28 @@ impl fmt::Display for WallJunction {
 	}
 }
 
+pub enum Direction {
+	Up,
+	Left,
+	Right,
+	Down,
+}
+
+impl fmt::Display for Direction {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		write!(
+			f,
+			"{}",
+			match self {
+				Direction::Up => "⬆",
+				Direction::Left => "⬅",
+				Direction::Right => "➡",
+				Direction::Down => "⬇",
+			}
+		)
+	}
+}
+
 const UPPER_LEFT: WallJunction = WallJunction(RIGHT | DOWN);
 const UPPER_RIGHT: WallJunction = WallJunction(LEFT | DOWN);
 const LOWER_LEFT: WallJunction = WallJunction(RIGHT | UP);
@@ -167,6 +189,23 @@ impl Map {
 		assert!(r < self.height - 1 && c < self.width);
 
 		self.map[(r * 2) + 1][c]
+	}
+
+	pub fn set(&mut self, r: usize, c: usize, dir: Direction, closed: bool) {
+		match dir {
+			Direction::Up => self.set_above(r, c, closed),
+			Direction::Left => self.set_left(r, c, closed),
+			Direction::Right => self.set_right(r, c, closed),
+			Direction::Down => self.set_below(r, c, closed),
+		};
+	}
+	pub fn is(&mut self, r: usize, c: usize, dir: Direction) -> bool {
+		match dir {
+			Direction::Up => self.is_above(r, c),
+			Direction::Left => self.is_left(r, c),
+			Direction::Right => self.is_right(r, c),
+			Direction::Down => self.is_below(r, c),
+		}
 	}
 }
 
