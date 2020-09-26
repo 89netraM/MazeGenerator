@@ -1,0 +1,3 @@
+# MazeGenerator
+
+Generates Mazes
