@@ -35,5 +35,15 @@ fn main() {
 
 	println!("Map: \n{}", map);
 
-	println!("Down: {}", Direction::Down);
+	if let Some(path) = map.solve((0, 0), (4, 4)) {
+		println!(
+			"Path: {}",
+			path.into_iter()
+				.map(|d| format!("{}", d))
+				.collect::<Vec<String>>()
+				.join(" ")
+		);
+	} else {
+		println!("No path through maze");
+	}
 }

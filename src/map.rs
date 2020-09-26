@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+use std::collections::{hash_map::Entry, HashMap};
 use std::fmt;
 
 const UP: usize = 0b1000;
@@ -129,6 +131,13 @@ const LOWER_RIGHT: WallJunction = WallJunction(LEFT | UP);
 const HORIZONTAL: WallJunction = WallJunction(LEFT | RIGHT);
 const VERTICAL: WallJunction = WallJunction(UP | DOWN);
 
+const DIRECTIONS: [Direction; 4] = [
+	Direction::Up,
+	Direction::Left,
+	Direction::Right,
+	Direction::Down,
+];
+
 pub struct Map {
 	width: usize,
 	height: usize,
@@ -155,7 +164,7 @@ impl Map {
 
 		self.map[(r * 2) - 1][c] = closed;
 	}
-	pub fn is_above(&mut self, r: usize, c: usize) -> bool {
+	pub fn is_above(&self, r: usize, c: usize) -> bool {
 		assert!(0 < r && r < self.height && c < self.width);
 
 		self.map[(r * 2) - 1][c]
@@ -165,7 +174,7 @@ impl Map {
 
 		self.map[r * 2][c - 1] = closed;
 	}
-	pub fn is_left(&mut self, r: usize, c: usize) -> bool {
+	pub fn is_left(&self, r: usize, c: usize) -> bool {
 		assert!(r < self.height && 0 < c && c < self.width);
 
 		self.map[r * 2][c - 1]
@@ -175,7 +184,7 @@ impl Map {
 
 		self.map[r * 2][c] = closed;
 	}
-	pub fn is_right(&mut self, r: usize, c: usize) -> bool {
+	pub fn is_right(&self, r: usize, c: usize) -> bool {
 		assert!(r < self.height && c < self.width - 1);
 
 		self.map[r * 2][c]
@@ -185,7 +194,7 @@ impl Map {
 
 		self.map[(r * 2) + 1][c] = closed;
 	}
-	pub fn is_below(&mut self, r: usize, c: usize) -> bool {
+	pub fn is_below(&self, r: usize, c: usize) -> bool {
 		assert!(r < self.height - 1 && c < self.width);
 
 		self.map[(r * 2) + 1][c]
@@ -199,13 +208,92 @@ impl Map {
 			Direction::Down => self.set_below(r, c, closed),
 		};
 	}
-	pub fn is(&mut self, r: usize, c: usize, dir: Direction) -> bool {
+	pub fn is(&self, r: usize, c: usize, dir: &Direction) -> bool {
 		match dir {
-			Direction::Up => self.is_above(r, c),
-			Direction::Left => self.is_left(r, c),
-			Direction::Right => self.is_right(r, c),
-			Direction::Down => self.is_below(r, c),
+			Direction::Up if 0 < r && r < self.height && c < self.width => self.is_above(r, c),
+			Direction::Left if r < self.height && 0 < c && c < self.width => self.is_left(r, c),
+			Direction::Right if r < self.height && c < self.width - 1 => self.is_right(r, c),
+			Direction::Down if r < self.height - 1 && c < self.width => self.is_below(r, c),
+			_ => true,
 		}
+	}
+
+	fn move_in_direction(
+		&self,
+		current: (usize, usize),
+		dir: &Direction,
+	) -> Option<(usize, usize)> {
+		match dir {
+			Direction::Up if current.0 > 0 => Some((current.0 - 1, current.1)),
+			Direction::Left if current.1 > 0 => Some((current.0, current.1 - 1)),
+			Direction::Right if current.1 < self.width - 1 => Some((current.0, current.1 + 1)),
+			Direction::Down if current.0 < self.height - 1 => Some((current.0 + 1, current.1)),
+			_ => None,
+		}
+	}
+
+	fn possible_moves_for(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
+		DIRECTIONS
+			.iter()
+			.filter_map(|dir| {
+				if !self.is(pos.0, pos.1, dir) {
+					return self.move_in_direction(pos, dir);
+				}
+				None
+			})
+			.collect()
+	}
+
+	pub fn solve(&self, from: (usize, usize), to: (usize, usize)) -> Option<Vec<Direction>> {
+		assert!(from.0 < self.height && from.1 < self.width);
+		assert!(to.0 < self.height && to.1 < self.width);
+
+		if from == to {
+			return Some(Vec::new());
+		}
+
+		let mut from_to = HashMap::new();
+		from_to.insert(from, None);
+		let mut to_visit = VecDeque::new();
+		to_visit.push_back(from);
+
+		while let Some(next) = to_visit.pop_front() {
+			for moved in self.possible_moves_for(next) {
+				if let Entry::Vacant(e) = from_to.entry(moved) {
+					e.insert(Some(next));
+					if moved == to {
+						return Some(build_path(from_to, to));
+					}
+					to_visit.push_back(moved);
+				}
+			}
+		}
+
+		None
+	}
+}
+
+fn build_path(
+	mut from_to: HashMap<(usize, usize), Option<(usize, usize)>>,
+	to: (usize, usize),
+) -> Vec<Direction> {
+	if let Some(Some(from)) = from_to.remove(&to) {
+		let mut part = build_path(from_to, from);
+		part.push(
+			match (
+				(from.0 as isize) - (to.0 as isize),
+				(from.1 as isize) - (to.1 as isize),
+			) {
+				(1, 0) => Direction::Up,
+				(0, 1) => Direction::Left,
+				(0, -1) => Direction::Right,
+				(-1, 0) => Direction::Down,
+				(_, _) => panic!(),
+			},
+		);
+		part
+	} else {
+		Vec::new()
 	}
 }
 
