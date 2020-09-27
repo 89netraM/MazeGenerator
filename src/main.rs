@@ -61,7 +61,7 @@ fn main() {
 	stdout
 		.execute(cursor::Hide)
 		.expect("Could not hide cursor.");
-	let map = Map::generate_with_peek(rows, columns, (start_row, start_column), &mut |map| {
+	let map = Map::generate_with_peek(rows, columns, (start_row, start_column), |map| {
 		if move_height > 0 {
 			stdout
 				.execute(cursor::MoveUp(move_height))

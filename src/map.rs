@@ -1,6 +1,6 @@
 extern crate rand;
 use rand::seq::SliceRandom;
-use rand::{thread_rng, Rng};
+use rand::{thread_rng};
 
 use std::collections::HashSet;
 use std::collections::VecDeque;
@@ -166,18 +166,40 @@ impl Map {
 	}
 
 	pub fn generate(rows: usize, columns: usize, start: (usize, usize)) -> Map {
-		Map::generate_with_peek(rows, columns, start, &mut |_| {})
+		Map::generate_with_peek(rows, columns, start, |_| {})
 	}
 	pub fn generate_with_peek<F>(
-		rows: usize, columns: usize,
+		rows: usize,
+		columns: usize,
 		start: (usize, usize),
-		peek: &mut F,
+		mut peek: F,
 	) -> Map
 	where
 		F: FnMut(&Map),
 	{
 		let mut map = Map::new(rows, columns);
-		map.make_path_with_peek(start, &mut HashSet::new(), &mut thread_rng(), peek);
+		let mut rng = thread_rng();
+
+		let mut visited = HashSet::new();
+		visited.insert(start);
+		let mut to_visit = vec![start];
+
+		while let Some(next) = to_visit.pop() {
+			let moved_positions = DIRECTIONS
+				.iter()
+				.filter_map(|d| map.move_in_direction(&next, d).map(|m| (m, d)))
+				.filter(|(m, _)| !visited.contains(&m)).collect::<Vec<((usize, usize), &Direction)>>();
+			if moved_positions.len() > 1 {
+				to_visit.push(next);
+			}
+			if let Some((moved, dir)) = moved_positions.choose(&mut rng) {
+				map.set(next.0, next.1, dir, false);
+				to_visit.push(moved.clone());
+				visited.insert(moved.clone());
+				peek(&map);
+			}
+		}
+
 		map
 	}
 
@@ -292,32 +314,6 @@ impl Map {
 		}
 
 		None
-	}
-
-	fn make_path_with_peek<R, F>(
-		&mut self,
-		start: (usize, usize),
-		taken: &mut HashSet<(usize, usize)>,
-		rng: &mut R,
-		peek: &mut F,
-	) where
-		R: Rng + ?Sized,
-		F: FnMut(&Map),
-	{
-		taken.insert(start);
-
-		let mut dirs = DIRECTIONS.clone();
-		dirs.shuffle(rng);
-		for dir in &dirs {
-			if let Some(moved) = self.move_in_direction(&start, dir) {
-				if taken.insert(moved) {
-					self.set(start.0, start.1, dir, false);
-					peek(&self);
-
-					self.make_path_with_peek(moved, taken, rng, peek);
-				}
-			}
-		}
 	}
 }
 
