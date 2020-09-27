@@ -58,9 +58,15 @@ fn main() {
 			.help("Use the Aldous-Broder algorithm for maze generation")
 			.display_order(6)
 		)
+		.arg(Arg::with_name("PRIM")
+			.long("prim")
+			.help("Use Prim's algorithm for maze generation")
+			.display_order(7)
+		)
 		.group(ArgGroup::with_name("ALGORITHM").args(&[
 			"DFS",
 			"AB",
+			"PRIM",
 		]))
 		.get_matches();
 
@@ -90,6 +96,8 @@ fn main() {
 	};
 	let map = if matches.is_present("AB") {
 		Map::generate_ab(rows, columns, peek_fn)
+	} else if matches.is_present("PRIM") {
+		Map::generate_prim(rows, columns, (start_row, start_column), peek_fn)
 	} else {
 		Map::generate_dfs(rows, columns, (start_row, start_column), peek_fn)
 	};

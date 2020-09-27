@@ -1,6 +1,6 @@
 extern crate rand;
 use rand::seq::SliceRandom;
-use rand::{thread_rng};
+use rand::thread_rng;
 
 use std::collections::HashSet;
 use std::collections::VecDeque;
@@ -107,7 +107,7 @@ impl fmt::Display for WallJunction {
 	}
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum Direction {
 	Up,
 	Left,
@@ -237,6 +237,40 @@ impl Map {
 		map
 	}
 
+	pub fn generate_prim<F>(
+		rows: usize,
+		columns: usize,
+		start: (usize, usize),
+		mut peek: F,
+	) -> Map
+	where
+		F: FnMut(&Map),
+	{
+		let mut map = Map::new(rows, columns);
+		let mut rng = thread_rng();
+
+		let mut visited = HashSet::new();
+		visited.insert(start);
+		let mut walls = map.walls_around(&start);
+
+		while walls.len() > 0 {
+			walls.shuffle(&mut rng);
+			let (from, dir) = walls.pop().unwrap();
+			if let Some(to) = map.move_in_direction(&from, &dir) {
+				if !visited.contains(&to) {
+					map.set(from.0, from.1, &dir, false);
+
+					visited.insert(to);
+					walls.append(&mut map.walls_around(&to));
+
+					peek(&map);
+				}
+			}
+		}
+
+		map
+	}
+
 	pub fn set_above(&mut self, r: usize, c: usize, closed: bool) {
 		assert!(0 < r && r < self.rows && c < self.columns);
 
@@ -286,13 +320,13 @@ impl Map {
 			Direction::Down => self.set_below(r, c, closed),
 		};
 	}
-	pub fn is(&self, r: usize, c: usize, dir: &Direction) -> bool {
+	pub fn is(&self, r: usize, c: usize, dir: &Direction) -> Option<bool> {
 		match dir {
-			Direction::Up if 0 < r && r < self.rows && c < self.columns => self.is_above(r, c),
-			Direction::Left if r < self.rows && 0 < c && c < self.columns => self.is_left(r, c),
-			Direction::Right if r < self.rows && c < self.columns - 1 => self.is_right(r, c),
-			Direction::Down if r < self.rows - 1 && c < self.columns => self.is_below(r, c),
-			_ => true,
+			Direction::Up if 0 < r && r < self.rows && c < self.columns => Some(self.is_above(r, c)),
+			Direction::Left if r < self.rows && 0 < c && c < self.columns => Some(self.is_left(r, c)),
+			Direction::Right if r < self.rows && c < self.columns - 1 => Some(self.is_right(r, c)),
+			Direction::Down if r < self.rows - 1 && c < self.columns => Some(self.is_below(r, c)),
+			_ => None,
 		}
 	}
 
@@ -310,11 +344,23 @@ impl Map {
 		}
 	}
 
+	fn walls_around(&self, pos: &(usize, usize)) -> Vec<((usize, usize), Direction)> {
+		DIRECTIONS
+			.iter()
+			.filter_map(|dir| {
+				if self.is(pos.0, pos.1, dir) == Some(true) {
+					return Some((pos.clone(), dir.clone()));
+				}
+				None
+			})
+			.collect()
+	}
+
 	fn possible_moves_for(&self, pos: &(usize, usize)) -> Vec<(usize, usize)> {
 		DIRECTIONS
 			.iter()
 			.filter_map(|dir| {
-				if !self.is(pos.0, pos.1, dir) {
+				if self.is(pos.0, pos.1, dir) == Some(false) {
 					return self.move_in_direction(pos, dir);
 				}
 				None
