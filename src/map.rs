@@ -165,10 +165,7 @@ impl Map {
 		Map { rows, columns, map }
 	}
 
-	pub fn generate(rows: usize, columns: usize, start: (usize, usize)) -> Map {
-		Map::generate_with_peek(rows, columns, start, |_| {})
-	}
-	pub fn generate_with_peek<F>(
+	pub fn generate_dfs_with_peek<F>(
 		rows: usize,
 		columns: usize,
 		start: (usize, usize),
@@ -196,6 +193,43 @@ impl Map {
 				map.set(next.0, next.1, dir, false);
 				to_visit.push(moved.clone());
 				visited.insert(moved.clone());
+				peek(&map);
+			}
+		}
+
+		map
+	}
+
+	pub fn generate_ab_with_peek<F>(
+		rows: usize,
+		columns: usize,
+		mut peek: F,
+	) -> Map
+	where
+		F: FnMut(&Map),
+	{
+		let mut map = Map::new(rows, columns);
+
+		for c in 1..map.columns {
+			map.set_left(0, c, false);
+
+			peek(&map);
+		}
+		for r in 1..map.rows {
+			map.set_above(r, 0, false);
+
+			peek(&map);
+		}
+
+		for r in 1..map.rows {
+			for c in 1..map.columns {
+				if rand::random() {
+					map.set_left(r, c, false);
+				}
+				else {
+					map.set_above(r, c, false);
+				}
+
 				peek(&map);
 			}
 		}

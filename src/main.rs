@@ -3,7 +3,7 @@ use crossterm::{cursor, ExecutableCommand};
 use std::io::{stdout, Write};
 
 extern crate clap;
-use clap::{App, Arg};
+use clap::{App, Arg, ArgGroup};
 use std::str::FromStr;
 
 use std::{thread, time::Duration};
@@ -48,6 +48,20 @@ fn main() {
 			.help("The ms delay between steps")
 			.display_order(4),
 		)
+		.arg(Arg::with_name("DFS")
+			.long("dfs")
+			.help("Use the depth first search algorithm for maze generation [default]")
+			.display_order(5)
+		)
+		.arg(Arg::with_name("AB")
+			.long("ab")
+			.help("Use the Aldous-Broder algorithm for maze generation")
+			.display_order(6)
+		)
+		.group(ArgGroup::with_name("ALGORITHM").args(&[
+			"DFS",
+			"AB",
+		]))
 		.get_matches();
 
 	let rows = matches.value_of("ROWS").map(usize::from_str).unwrap().unwrap();
@@ -61,7 +75,7 @@ fn main() {
 	stdout
 		.execute(cursor::Hide)
 		.expect("Could not hide cursor.");
-	let map = Map::generate_with_peek(rows, columns, (start_row, start_column), |map| {
+	let peek_fn = |map: &Map| {
 		if move_height > 0 {
 			stdout
 				.execute(cursor::MoveUp(move_height))
@@ -73,7 +87,12 @@ fn main() {
 		if delay > 0 {
 			thread::sleep(Duration::from_millis(delay));
 		}
-	});
+	};
+	let map = if matches.is_present("AB") {
+		Map::generate_ab_with_peek(rows, columns, peek_fn)
+	} else {
+		Map::generate_dfs_with_peek(rows, columns, (start_row, start_column), peek_fn)
+	};
 	stdout
 		.execute(cursor::Show)
 		.expect("Could not show cursor.");
