@@ -53,9 +53,9 @@ fn main() {
 			.help("Use the depth first search algorithm for maze generation [default]")
 			.display_order(5)
 		)
-		.arg(Arg::with_name("AB")
-			.long("ab")
-			.help("Use the Aldous-Broder algorithm for maze generation")
+		.arg(Arg::with_name("THREE")
+			.long("three")
+			.help("Use the binary three maze algorithm for maze generation")
 			.display_order(6)
 		)
 		.arg(Arg::with_name("PRIM")
@@ -65,7 +65,7 @@ fn main() {
 		)
 		.group(ArgGroup::with_name("ALGORITHM").args(&[
 			"DFS",
-			"AB",
+			"THREE",
 			"PRIM",
 		]))
 		.get_matches();
@@ -94,8 +94,8 @@ fn main() {
 			thread::sleep(Duration::from_millis(delay));
 		}
 	};
-	let map = if matches.is_present("AB") {
-		Map::generate_ab(rows, columns, peek_fn)
+	let map = if matches.is_present("THREE") {
+		Map::generate_three(rows, columns, peek_fn)
 	} else if matches.is_present("PRIM") {
 		Map::generate_prim(rows, columns, (start_row, start_column), peek_fn)
 	} else {

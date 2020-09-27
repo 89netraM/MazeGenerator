@@ -200,7 +200,7 @@ impl Map {
 		map
 	}
 
-	pub fn generate_ab<F>(
+	pub fn generate_three<F>(
 		rows: usize,
 		columns: usize,
 		mut peek: F,
