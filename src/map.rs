@@ -1,6 +1,6 @@
 extern crate rand;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 
 use std::collections::HashSet;
 use std::collections::VecDeque;
@@ -263,6 +263,37 @@ impl Map {
 					visited.insert(to);
 					walls.append(&mut map.walls_around(&to));
 
+					peek(&map);
+				}
+			}
+		}
+
+		map
+	}
+
+	pub fn generate_ab<F>(
+		rows: usize,
+		columns: usize,
+		start: (usize, usize),
+		mut peek: F,
+	) -> Map
+	where
+		F: FnMut(&Map),
+	{
+		let mut map = Map::new(rows, columns);
+		let mut rng = thread_rng();
+
+		let mut visited = HashSet::new();
+		visited.insert(start);
+		let total_cells = map.rows * map.columns;
+
+		while visited.len() < total_cells {
+			let next = visited.iter().skip((rng.gen::<f32>() * visited.len() as f32 - 1.0).floor() as usize).next().unwrap();
+			let dir = DIRECTIONS.choose(&mut rng).unwrap();
+			if let Some(moved) = map.move_in_direction(next, dir) {
+				if !visited.contains(&moved) {
+					map.set(next.0, next.1, dir, false);
+					visited.insert(moved.clone());
 					peek(&map);
 				}
 			}
