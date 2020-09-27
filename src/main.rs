@@ -102,8 +102,7 @@ fn main() {
 			"Path: {}",
 			path.into_iter()
 				.map(|d| format!("{}", d))
-				.collect::<Vec<String>>()
-				.join(" ")
+				.collect::<String>()
 		);
 	} else {
 		println!("No path through maze");

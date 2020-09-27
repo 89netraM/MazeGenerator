@@ -121,10 +121,10 @@ impl fmt::Display for Direction {
 			f,
 			"{}",
 			match self {
-				Direction::Up => "⬆",
-				Direction::Left => "⬅",
-				Direction::Right => "➡",
-				Direction::Down => "⬇",
+				Direction::Up => "↑",
+				Direction::Left => "←",
+				Direction::Right => "→",
+				Direction::Down => "↓",
 			}
 		)
 	}
