@@ -166,14 +166,17 @@ impl Map {
 	}
 
 	pub fn generate(width: usize, height: usize, start: (usize, usize)) -> Map {
-		Map::generate_with_peek(width, height, start, |_| {})
+		Map::generate_with_peek(width, height, start, &mut |_| {})
 	}
-	pub fn generate_with_peek(
+	pub fn generate_with_peek<F>(
 		width: usize,
 		height: usize,
 		start: (usize, usize),
-		peek: fn(&Map),
-	) -> Map {
+		peek: &mut F,
+	) -> Map
+	where
+		F: FnMut(&Map),
+	{
 		let mut map = Map::new(width, height);
 		map.make_path_with_peek(start, &mut HashSet::new(), &mut thread_rng(), peek);
 		map
@@ -292,14 +295,15 @@ impl Map {
 		None
 	}
 
-	fn make_path_with_peek<R>(
+	fn make_path_with_peek<R, F>(
 		&mut self,
 		start: (usize, usize),
 		taken: &mut HashSet<(usize, usize)>,
 		rng: &mut R,
-		peek: fn(&Map),
+		peek: &mut F,
 	) where
 		R: Rng + ?Sized,
+		F: FnMut(&Map),
 	{
 		taken.insert(start);
 
