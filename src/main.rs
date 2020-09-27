@@ -3,7 +3,7 @@ use crossterm::{cursor, ExecutableCommand};
 use std::io::{stdout, Write};
 
 extern crate clap;
-use clap::{App, Arg, ArgGroup};
+use clap::{App, Arg, ArgGroup, ArgMatches};
 use std::str::FromStr;
 
 use std::{thread, time::Duration};
@@ -16,35 +16,35 @@ fn main() {
 		.arg(Arg::with_name("ROWS")
 			.long("rows")
 			.default_value("5")
-			.validator(|s| usize::from_str(&s).map(|_| ()).or(Err("Must be a number".to_string())))
+			.validator(check_arg_is_number)
 			.help("Number of rows of the generated map")
 			.display_order(0),
 		)
 		.arg(Arg::with_name("COLUMNS")
 			.long("columns")
 			.default_value("5")
-			.validator(|s| usize::from_str(&s).map(|_| ()).or(Err("Must be a number".to_string())))
+			.validator(check_arg_is_number)
 			.help("Number of columns of the generated map")
 			.display_order(1),
 		)
 		.arg(Arg::with_name("START_ROW")
 			.long("start_row")
 			.default_value("0")
-			.validator(|s| usize::from_str(&s).map(|_| ()).or(Err("Must be a number".to_string())))
+			.validator(check_arg_is_number)
 			.help("The row to start generating from")
 			.display_order(2),
 		)
 		.arg(Arg::with_name("START_COLUMN")
 			.long("start_column")
 			.default_value("0")
-			.validator(|s| usize::from_str(&s).map(|_| ()).or(Err("Must be a number".to_string())))
+			.validator(check_arg_is_number)
 			.help("The column to start generating from")
 			.display_order(3),
 		)
 		.arg(Arg::with_name("DELAY")
 			.long("delay")
 			.default_value("50")
-			.validator(|s| usize::from_str(&s).map(|_| ()).or(Err("Must be a number".to_string())))
+			.validator(check_arg_is_number)
 			.help("The ms delay between steps")
 			.display_order(4),
 		)
@@ -64,11 +64,11 @@ fn main() {
 		]))
 		.get_matches();
 
-	let rows = matches.value_of("ROWS").map(usize::from_str).unwrap().unwrap();
-	let columns = matches.value_of("COLUMNS").map(usize::from_str).unwrap().unwrap();
-	let start_row = matches.value_of("START_ROW").map(usize::from_str).unwrap().unwrap();
-	let start_column = matches.value_of("START_COLUMN").map(usize::from_str).unwrap().unwrap();
-	let delay = matches.value_of("DELAY").map(u64::from_str).unwrap().unwrap();
+	let rows = get_arg_as_t(&matches, "ROWS");
+	let columns = get_arg_as_t(&matches, "COLUMNS");
+	let start_row = get_arg_as_t(&matches, "START_ROW");
+	let start_column = get_arg_as_t(&matches, "START_COLUMN");
+	let delay = get_arg_as_t(&matches, "DELAY");
 
 	let mut stdout = stdout();
 	let mut move_height = 0;
@@ -108,4 +108,23 @@ fn main() {
 	} else {
 		println!("No path through maze");
 	}
+}
+
+fn check_arg_is_number(s: String) -> Result<(), String> {
+	if usize::from_str(&s).is_ok() {
+		Ok(())
+	}
+	else {
+		Err("Must be a number".to_string())
+	}
+}
+
+fn get_arg_as_t<T: FromStr>(matches: &ArgMatches, name: &str) -> T {
+	if let Some(s) = matches.value_of(name) {
+		if let Ok(v) = T::from_str(s) {
+			return v;
+		}
+	}
+
+	panic!();
 }
