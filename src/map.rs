@@ -1,3 +1,8 @@
+extern crate rand;
+use rand::seq::SliceRandom;
+use rand::{thread_rng, Rng};
+
+use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::collections::{hash_map::Entry, HashMap};
 use std::fmt;
@@ -102,6 +107,7 @@ impl fmt::Display for WallJunction {
 	}
 }
 
+#[derive(Copy, Clone)]
 pub enum Direction {
 	Up,
 	Left,
@@ -159,6 +165,20 @@ impl Map {
 		Map { width, height, map }
 	}
 
+	pub fn generate(width: usize, height: usize, start: (usize, usize)) -> Map {
+		Map::generate_with_peek(width, height, start, |_| {})
+	}
+	pub fn generate_with_peek(
+		width: usize,
+		height: usize,
+		start: (usize, usize),
+		peek: fn(&Map),
+	) -> Map {
+		let mut map = Map::new(width, height);
+		map.make_path_with_peek(start, &mut HashSet::new(), &mut thread_rng(), peek);
+		map
+	}
+
 	pub fn set_above(&mut self, r: usize, c: usize, closed: bool) {
 		assert!(0 < r && r < self.height && c < self.width);
 
@@ -200,7 +220,7 @@ impl Map {
 		self.map[(r * 2) + 1][c]
 	}
 
-	pub fn set(&mut self, r: usize, c: usize, dir: Direction, closed: bool) {
+	pub fn set(&mut self, r: usize, c: usize, dir: &Direction, closed: bool) {
 		match dir {
 			Direction::Up => self.set_above(r, c, closed),
 			Direction::Left => self.set_left(r, c, closed),
@@ -220,7 +240,7 @@ impl Map {
 
 	fn move_in_direction(
 		&self,
-		current: (usize, usize),
+		current: &(usize, usize),
 		dir: &Direction,
 	) -> Option<(usize, usize)> {
 		match dir {
@@ -232,7 +252,7 @@ impl Map {
 		}
 	}
 
-	fn possible_moves_for(&self, pos: (usize, usize)) -> Vec<(usize, usize)> {
+	fn possible_moves_for(&self, pos: &(usize, usize)) -> Vec<(usize, usize)> {
 		DIRECTIONS
 			.iter()
 			.filter_map(|dir| {
@@ -258,7 +278,7 @@ impl Map {
 		to_visit.push_back(from);
 
 		while let Some(next) = to_visit.pop_front() {
-			for moved in self.possible_moves_for(next) {
+			for moved in self.possible_moves_for(&next) {
 				if let Entry::Vacant(e) = from_to.entry(moved) {
 					e.insert(Some(next));
 					if moved == to {
@@ -270,6 +290,31 @@ impl Map {
 		}
 
 		None
+	}
+
+	fn make_path_with_peek<R>(
+		&mut self,
+		start: (usize, usize),
+		taken: &mut HashSet<(usize, usize)>,
+		rng: &mut R,
+		peek: fn(&Map),
+	) where
+		R: Rng + ?Sized,
+	{
+		taken.insert(start);
+
+		let mut dirs = DIRECTIONS.clone();
+		dirs.shuffle(rng);
+		for dir in &dirs {
+			if let Some(moved) = self.move_in_direction(&start, dir) {
+				if taken.insert(moved) {
+					self.set(start.0, start.1, dir, false);
+					peek(&self);
+
+					self.make_path_with_peek(moved, taken, rng, peek);
+				}
+			}
+		}
 	}
 }
 
