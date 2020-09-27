@@ -165,7 +165,7 @@ impl Map {
 		Map { rows, columns, map }
 	}
 
-	pub fn generate_dfs_with_peek<F>(
+	pub fn generate_dfs<F>(
 		rows: usize,
 		columns: usize,
 		start: (usize, usize),
@@ -200,7 +200,7 @@ impl Map {
 		map
 	}
 
-	pub fn generate_ab_with_peek<F>(
+	pub fn generate_ab<F>(
 		rows: usize,
 		columns: usize,
 		mut peek: F,

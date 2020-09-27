@@ -89,9 +89,9 @@ fn main() {
 		}
 	};
 	let map = if matches.is_present("AB") {
-		Map::generate_ab_with_peek(rows, columns, peek_fn)
+		Map::generate_ab(rows, columns, peek_fn)
 	} else {
-		Map::generate_dfs_with_peek(rows, columns, (start_row, start_column), peek_fn)
+		Map::generate_dfs(rows, columns, (start_row, start_column), peek_fn)
 	};
 	stdout
 		.execute(cursor::Show)
