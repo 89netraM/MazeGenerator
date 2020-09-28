@@ -151,18 +151,24 @@ pub struct Map {
 }
 
 impl Map {
-	pub fn new(rows: usize, columns: usize) -> Map {
+	fn new_with_value(rows: usize, columns: usize, value: bool) -> Map {
 		let mut map = Vec::with_capacity(rows * 2 - 1);
 
 		for r in 0..(rows * 2 - 1) {
 			if r % 2 == 0 {
-				map.push(vec![true; columns - 1]);
+				map.push(vec![value; columns - 1]);
 			} else {
-				map.push(vec![true; columns]);
+				map.push(vec![value; columns]);
 			}
 		}
 
 		Map { rows, columns, map }
+	}
+	pub fn new(rows: usize, columns: usize) -> Map {
+		Map::new_with_value(rows, columns, true)
+	}
+	pub fn new_empty(rows: usize, columns: usize) -> Map {
+		Map::new_with_value(rows, columns, false)
 	}
 
 	pub fn generate_dfs<F>(
@@ -298,6 +304,87 @@ impl Map {
 				}
 			}
 		}
+
+		map
+	}
+
+	pub fn generate_div<F>(
+		rows: usize,
+		columns: usize,
+		mut peek: F,
+	) -> Map
+	where
+		F: FnMut(&Map),
+	{
+		fn recurse_vertical<R, F>(
+			map: &mut Map,
+			rng: &mut R,
+			upper_left: (usize, usize),
+			lower_right: (usize, usize),
+			peek: &mut F,
+		) where
+			R: Rng + ?Sized,
+			F: FnMut(&Map),
+		{
+			if upper_left.1 < lower_right.1 {
+				let div = rng.gen_range(upper_left.1, lower_right.1);
+				let passage = rng.gen_range(upper_left.0, lower_right.0 + 1);
+
+				for r in upper_left.0..(lower_right.0 + 1) {
+					if r != passage {
+						map.set_right(r, div, true);
+						peek(&map);
+					}
+				}
+
+				if upper_left.0 >= lower_right.0 {
+					recurse_vertical(map, rng, upper_left, (lower_right.0, div), peek);
+					recurse_vertical(map, rng, (upper_left.0, div + 1), lower_right, peek);
+				}
+				else {
+					recurse_horizontal(map, rng, upper_left, (lower_right.0, div), peek);
+					recurse_horizontal(map, rng, (upper_left.0, div + 1), lower_right, peek);
+				}
+			}
+		}
+		fn recurse_horizontal<R, F>(
+			map: &mut Map,
+			rng: &mut R,
+			upper_left: (usize, usize),
+			lower_right: (usize, usize),
+			peek: &mut F,
+		) where
+			R: Rng + ?Sized,
+			F: FnMut(&Map),
+		{
+			if upper_left.0 < lower_right.0 {
+				let div = rng.gen_range(upper_left.0, lower_right.0);
+				let passage = rng.gen_range(upper_left.1, lower_right.1 + 1);
+
+				for c in upper_left.1..(lower_right.1 + 1) {
+					if c != passage {
+						map.set_below(div, c, true);
+						peek(&map);
+					}
+				}
+
+				if upper_left.1 >= lower_right.1 {
+					recurse_horizontal(map, rng, upper_left, (div, lower_right.1), peek);
+					recurse_horizontal(map, rng, (div + 1, upper_left.1), lower_right, peek);
+				}
+				else {
+					recurse_vertical(map, rng, upper_left, (div, lower_right.1), peek);
+					recurse_vertical(map, rng, (div + 1, upper_left.1), lower_right, peek);
+				}
+			}
+		}
+
+		let mut map = Map::new_empty(rows, columns);
+		let mut rng = thread_rng();
+
+		let upper_left = (0, 0);
+		let lower_right = (map.rows - 1, map.columns - 1);
+		recurse_vertical(&mut map, &mut rng, upper_left, lower_right, &mut peek);
 
 		map
 	}

@@ -68,11 +68,17 @@ fn main() {
 			.help("Use the Aldous-Broder algorithm for maze generation")
 			.display_order(8)
 		)
+		.arg(Arg::with_name("DIV")
+			.long("div")
+			.help("Use the recursive division method for maze generation")
+			.display_order(9)
+		)
 		.group(ArgGroup::with_name("ALGORITHM").args(&[
 			"DFS",
 			"THREE",
 			"PRIM",
 			"AB",
+			"DIV",
 		]))
 		.get_matches();
 
@@ -106,6 +112,8 @@ fn main() {
 		Map::generate_prim(rows, columns, (start_row, start_column), peek_fn)
 	} else if matches.is_present("AB") {
 		Map::generate_ab(rows, columns, (start_row, start_column), peek_fn)
+	} else if matches.is_present("DIV") {
+		Map::generate_div(rows, columns, peek_fn)
 	} else {
 		Map::generate_dfs(rows, columns, (start_row, start_column), peek_fn)
 	};
