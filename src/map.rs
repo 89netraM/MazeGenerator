@@ -82,32 +82,11 @@ impl From<WallJunction> for char {
 
 impl fmt::Display for WallJunction {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(
-			f,
-			"{}",
-			match self.0 {
-				b if b == UP => '╵',
-				b if b == UP | LEFT => '┘',
-				b if b == UP | LEFT | RIGHT => '┴',
-				b if b == UP | LEFT | RIGHT | DOWN => '┼',
-				b if b == UP | LEFT | DOWN => '┤',
-				b if b == UP | RIGHT => '└',
-				b if b == UP | RIGHT | DOWN => '├',
-				b if b == UP | DOWN => '│',
-				b if b == LEFT => '╴',
-				b if b == LEFT | RIGHT => '─',
-				b if b == LEFT | RIGHT | DOWN => '┬',
-				b if b == LEFT | DOWN => '┐',
-				b if b == RIGHT => '╶',
-				b if b == RIGHT | DOWN => '┌',
-				b if b == DOWN => '╷',
-				_ => ' ',
-			}
-		)
+		write!(f, "{}", char::from(self.clone()))
 	}
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Direction {
 	Up,
 	Left,
@@ -171,16 +150,19 @@ impl Map {
 		Map::new_with_value(rows, columns, false)
 	}
 
-	pub fn generate_dfs<F>(
+	pub fn generate_dfs<F, G>(
 		rows: usize,
 		columns: usize,
 		start: (usize, usize),
-		mut peek: F,
+		mut initial_peek: F,
+		mut peek: G,
 	) -> Map
 	where
 		F: FnMut(&Map),
+		G: FnMut(&Map, &(usize, usize), &Direction),
 	{
 		let mut map = Map::new(rows, columns);
+		initial_peek(&map);
 		let mut rng = thread_rng();
 
 		let mut visited = HashSet::new();
@@ -199,60 +181,66 @@ impl Map {
 				map.set(next.0, next.1, dir, false);
 				to_visit.push(moved.clone());
 				visited.insert(moved.clone());
-				peek(&map);
+				peek(&map, &next, &dir);
 			}
 		}
 
 		map
 	}
 
-	pub fn generate_three<F>(
+	pub fn generate_three<F, G>(
 		rows: usize,
 		columns: usize,
-		mut peek: F,
+		mut initial_peek: F,
+		mut peek: G,
 	) -> Map
 	where
 		F: FnMut(&Map),
+		G: FnMut(&Map, &(usize, usize), &Direction),
 	{
 		let mut map = Map::new(rows, columns);
+		initial_peek(&map);
 
 		for c in 1..map.columns {
 			map.set_left(0, c, false);
 
-			peek(&map);
+			peek(&map, &(0, c), &Direction::Left);
 		}
 		for r in 1..map.rows {
 			map.set_above(r, 0, false);
 
-			peek(&map);
+			peek(&map, &(r, 0), &Direction::Up);
 		}
 
 		for r in 1..map.rows {
 			for c in 1..map.columns {
 				if rand::random() {
 					map.set_left(r, c, false);
+					peek(&map, &(r, c), &Direction::Left);
 				}
 				else {
 					map.set_above(r, c, false);
+					peek(&map, &(r, c), &Direction::Up);
 				}
-
-				peek(&map);
 			}
 		}
 
 		map
 	}
 
-	pub fn generate_prim<F>(
+	pub fn generate_prim<F, G>(
 		rows: usize,
 		columns: usize,
 		start: (usize, usize),
-		mut peek: F,
+		mut initial_peek: F,
+		mut peek: G,
 	) -> Map
 	where
 		F: FnMut(&Map),
+		G: FnMut(&Map, &(usize, usize), &Direction),
 	{
 		let mut map = Map::new(rows, columns);
+		initial_peek(&map);
 		let mut rng = thread_rng();
 
 		let mut visited = HashSet::new();
@@ -269,7 +257,7 @@ impl Map {
 					visited.insert(to);
 					walls.append(&mut map.walls_around(&to));
 
-					peek(&map);
+					peek(&map, &from, &dir);
 				}
 			}
 		}
@@ -277,16 +265,19 @@ impl Map {
 		map
 	}
 
-	pub fn generate_ab<F>(
+	pub fn generate_ab<F, G>(
 		rows: usize,
 		columns: usize,
 		start: (usize, usize),
-		mut peek: F,
+		mut initial_peek: F,
+		mut peek: G,
 	) -> Map
 	where
 		F: FnMut(&Map),
+		G: FnMut(&Map, &(usize, usize), &Direction),
 	{
 		let mut map = Map::new(rows, columns);
+		initial_peek(&map);
 		let mut rng = thread_rng();
 
 		let mut visited = HashSet::new();
@@ -299,8 +290,8 @@ impl Map {
 			if let Some(moved) = map.move_in_direction(next, dir) {
 				if !visited.contains(&moved) {
 					map.set(next.0, next.1, dir, false);
+					peek(&map, &next, dir);
 					visited.insert(moved.clone());
-					peek(&map);
 				}
 			}
 		}
@@ -308,23 +299,25 @@ impl Map {
 		map
 	}
 
-	pub fn generate_div<F>(
+	pub fn generate_div<F, G>(
 		rows: usize,
 		columns: usize,
-		mut peek: F,
+		mut initial_peek: F,
+		mut peek: G,
 	) -> Map
 	where
 		F: FnMut(&Map),
+		G: FnMut(&Map, &(usize, usize), &Direction),
 	{
-		fn recurse_vertical<R, F>(
+		fn recurse_vertical<R, G>(
 			map: &mut Map,
 			rng: &mut R,
 			upper_left: (usize, usize),
 			lower_right: (usize, usize),
-			peek: &mut F,
+			peek: &mut G,
 		) where
 			R: Rng + ?Sized,
-			F: FnMut(&Map),
+			G: FnMut(&Map, &(usize, usize), &Direction),
 		{
 			if upper_left.1 < lower_right.1 {
 				let div = rng.gen_range(upper_left.1, lower_right.1);
@@ -333,7 +326,7 @@ impl Map {
 				for r in upper_left.0..(lower_right.0 + 1) {
 					if r != passage {
 						map.set_right(r, div, true);
-						peek(&map);
+						peek(&map, &(r, div), &Direction::Right);
 					}
 				}
 
@@ -347,15 +340,15 @@ impl Map {
 				}
 			}
 		}
-		fn recurse_horizontal<R, F>(
+		fn recurse_horizontal<R, G>(
 			map: &mut Map,
 			rng: &mut R,
 			upper_left: (usize, usize),
 			lower_right: (usize, usize),
-			peek: &mut F,
+			peek: &mut G,
 		) where
 			R: Rng + ?Sized,
-			F: FnMut(&Map),
+			G: FnMut(&Map, &(usize, usize), &Direction),
 		{
 			if upper_left.0 < lower_right.0 {
 				let div = rng.gen_range(upper_left.0, lower_right.0);
@@ -364,7 +357,7 @@ impl Map {
 				for c in upper_left.1..(lower_right.1 + 1) {
 					if c != passage {
 						map.set_below(div, c, true);
-						peek(&map);
+						peek(&map, &(div, c), &Direction::Down);
 					}
 				}
 
@@ -380,6 +373,7 @@ impl Map {
 		}
 
 		let mut map = Map::new_empty(rows, columns);
+		initial_peek(&map);
 		let mut rng = thread_rng();
 
 		let upper_left = (0, 0);
@@ -512,6 +506,111 @@ impl Map {
 		}
 
 		None
+	}
+
+	pub fn get_chars(&self, pos: &(usize, usize), dir: &Direction) -> (char, char) {
+		if dir == &Direction::Left || dir == &Direction::Right {
+			let mut above = WallJunction::new();
+			let mut below = WallJunction::new();
+
+			if self.is(pos.0, pos.1, dir).unwrap_or(true) {
+				above.set_down(true);
+				below.set_up(true);
+			}
+
+			if pos.0 != 0 && self.is(pos.0 - 1, pos.1, dir).unwrap_or(true) {
+				above.set_up(true);
+			}
+			if pos.0 != self.rows - 1 && self.is(pos.0 + 1, pos.1, dir).unwrap_or(true) {
+				below.set_down(true);
+			}
+
+			if dir == &Direction::Left {
+				if pos.0 == 0 || self.is_above(pos.0, pos.1) {
+					above.set_right(true);
+				}
+				if pos.0 == self.rows - 1 || self.is_below(pos.0, pos.1) {
+					below.set_right(true);
+				}
+				if pos.1 != 0 {
+					if pos.0 == 0 || self.is_above(pos.0, pos.1 - 1) {
+						above.set_left(true);
+					}
+					if pos.0 == self.rows - 1 || self.is_below(pos.0, pos.1 - 1) {
+						below.set_left(true);
+					}
+				}
+			}
+			else {
+				if pos.0 == 0 || self.is_above(pos.0, pos.1) {
+					above.set_left(true);
+				}
+				if pos.0 == self.rows - 1 || self.is_below(pos.0, pos.1) {
+					below.set_left(true);
+				}
+				if pos.1 != self.columns - 1 {
+					if pos.0 == 0 || self.is_above(pos.0, pos.1 + 1) {
+						above.set_right(true);
+					}
+					if pos.0 == self.rows - 1 || self.is_below(pos.0, pos.1 + 1) {
+						below.set_right(true);
+					}
+				}
+			}
+
+			(char::from(above), char::from(below))
+		}
+		else {
+			let mut left = WallJunction::new();
+			let mut right = WallJunction::new();
+
+			if self.is(pos.0, pos.1, dir).unwrap_or(true) {
+				left.set_right(true);
+				right.set_left(true);
+			}
+
+			if pos.1 != 0 && self.is(pos.0, pos.1 - 1, dir).unwrap_or(true) {
+				left.set_left(true);
+			}
+			if pos.1 != self.columns - 1 && self.is(pos.0, pos.1 + 1, dir).unwrap_or(true) {
+				right.set_right(true);
+			}
+
+			if dir == &Direction::Up {
+				if pos.1 == 0 || self.is_left(pos.0, pos.1) {
+					left.set_down(true);
+				}
+				if pos.1 == self.columns - 1 || self.is_right(pos.0, pos.1) {
+					right.set_down(true);
+				}
+				if pos.0 != 0 {
+					if pos.1 == 0 || self.is_left(pos.0 - 1, pos.1) {
+						left.set_up(true);
+					}
+					if pos.1 == self.columns - 1 || self.is_right(pos.0 - 1, pos.1) {
+						right.set_up(true);
+					}
+				}
+			}
+			else {
+				if pos.1 == 0 || self.is_left(pos.0, pos.1) {
+					left.set_up(true);
+				}
+				if pos.1 == self.columns - 1 || self.is_right(pos.0, pos.1) {
+					right.set_up(true);
+				}
+				if pos.0 != self.rows - 1 {
+					if pos.1 == 0 || self.is_left(pos.0 + 1, pos.1) {
+						left.set_down(true);
+					}
+					if pos.1 == self.columns - 1 || self.is_right(pos.0 + 1, pos.1) {
+						right.set_down(true);
+					}
+				}
+			}
+
+			(char::from(left), char::from(right))
+		}
 	}
 }
 

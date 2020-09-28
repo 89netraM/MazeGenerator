@@ -1,5 +1,5 @@
 extern crate crossterm;
-use crossterm::{cursor, ExecutableCommand};
+use crossterm::{cursor, ExecutableCommand, QueueableCommand};
 use std::io::{stdout, Write};
 
 extern crate clap;
@@ -10,6 +10,7 @@ use std::{thread, time::Duration};
 
 mod map;
 use map::Map;
+use map::Direction;
 
 fn main() {
 	let matches = App::new("Maze Generator")
@@ -89,33 +90,86 @@ fn main() {
 	let delay = get_arg_as_t(&matches, "DELAY");
 
 	let mut stdout = stdout();
-	let mut move_height = 0;
 	stdout
 		.execute(cursor::Hide)
 		.expect("Could not hide cursor.");
-	let peek_fn = |map: &Map| {
-		if move_height > 0 {
+	let initial_peek_fn = |map: &Map| println!("{}", map);
+	let peek_fn = |map: &Map, pos: &(usize, usize), dir: &Direction| {
+		let chars = map.get_chars(pos, dir);
+		let rows = (map.rows - pos.0) as u16 + if dir == &Direction::Up { 1 } else { 0 };
+		let columns = pos.1 as u16 + if dir == &Direction::Right { 1 } else { 0 };
+
+		if dir == &Direction::Left || dir == &Direction::Right {
 			stdout
-				.execute(cursor::MoveUp(move_height))
+				.queue(cursor::MoveUp(rows + 1))
 				.expect("Could not move cursor.");
+			if columns > 0 {
+				stdout
+					.queue(cursor::MoveRight(columns))
+					.expect("Could not move cursor.");
+			}
+			stdout
+				.write_fmt(format_args!("{}", chars.0))
+				.expect("Could not write.");
+			stdout
+				.queue(cursor::MoveDown(1))
+				.expect("Could not move cursor.");
+			stdout
+				.queue(cursor::MoveLeft(1))
+				.expect("Could not move cursor.");
+			stdout
+				.write_fmt(format_args!("{}", chars.1))
+				.expect("Could not write.");
+			stdout
+				.queue(cursor::MoveLeft(columns + 1))
+				.expect("Could not move cursor.");
+			if rows > 0 {
+				stdout
+					.queue(cursor::MoveDown(rows))
+					.expect("Could not move cursor.");
+			}
 		}
-		writeln!(stdout, "{}", map).expect("Could not write.");
-		move_height = (map.rows as u16) + 1;
+		else {
+			if rows > 0 {
+				stdout
+					.queue(cursor::MoveUp(rows))
+					.expect("Could not move cursor.");
+			}
+			if columns > 0 {
+				stdout
+					.queue(cursor::MoveRight(columns))
+					.expect("Could not move cursor.");
+			}
+			stdout
+				.write_fmt(format_args!("{}{}", chars.0, chars.1))
+				.expect("Could not write.");
+			stdout
+				.queue(cursor::MoveLeft(columns + 2))
+				.expect("Could not move cursor.");
+			if rows > 0 {
+				stdout
+					.queue(cursor::MoveDown(rows))
+					.expect("Could not move cursor.");
+			}
+		}
+		stdout
+			.flush()
+			.expect("Could not flush.");
 
 		if delay > 0 {
 			thread::sleep(Duration::from_millis(delay));
 		}
 	};
 	let map = if matches.is_present("TREE") {
-		Map::generate_three(rows, columns, peek_fn)
+		Map::generate_three(rows, columns, initial_peek_fn, peek_fn)
 	} else if matches.is_present("PRIM") {
-		Map::generate_prim(rows, columns, (start_row, start_column), peek_fn)
+		Map::generate_prim(rows, columns, (start_row, start_column), initial_peek_fn, peek_fn)
 	} else if matches.is_present("AB") {
-		Map::generate_ab(rows, columns, (start_row, start_column), peek_fn)
+		Map::generate_ab(rows, columns, (start_row, start_column), initial_peek_fn, peek_fn)
 	} else if matches.is_present("DIV") {
-		Map::generate_div(rows, columns, peek_fn)
+		Map::generate_div(rows, columns, initial_peek_fn, peek_fn)
 	} else {
-		Map::generate_dfs(rows, columns, (start_row, start_column), peek_fn)
+		Map::generate_dfs(rows, columns, (start_row, start_column), initial_peek_fn, peek_fn)
 	};
 	stdout
 		.execute(cursor::Show)
