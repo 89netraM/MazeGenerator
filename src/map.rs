@@ -119,12 +119,7 @@ const LOWER_RIGHT: WallJunction = WallJunction(LEFT | UP);
 const HORIZONTAL: WallJunction = WallJunction(LEFT | RIGHT);
 const VERTICAL: WallJunction = WallJunction(UP | DOWN);
 
-const DIRECTIONS: [Direction; 4] = [
-	Direction::Up,
-	Direction::Left,
-	Direction::Right,
-	Direction::Down,
-];
+const DIRECTIONS: [Direction; 4] = [Direction::Up, Direction::Left, Direction::Right, Direction::Down];
 
 pub struct Map {
 	pub rows: usize,
@@ -193,12 +188,7 @@ impl Map {
 		map
 	}
 
-	pub fn generate_three<F, G>(
-		rows: usize,
-		columns: usize,
-		mut initial_peek: F,
-		mut peek: G,
-	) -> Map
+	pub fn generate_three<F, G>(rows: usize, columns: usize, mut initial_peek: F, mut peek: G) -> Map
 	where
 		F: FnMut(&Map),
 		G: FnMut(&Map, &(usize, usize), &Direction),
@@ -450,11 +440,7 @@ impl Map {
 		}
 	}
 
-	fn move_in_direction(
-		&self,
-		current: &(usize, usize),
-		dir: &Direction,
-	) -> Option<(usize, usize)> {
+	fn move_in_direction(&self, current: &(usize, usize), dir: &Direction) -> Option<(usize, usize)> {
 		match dir {
 			Direction::Up if current.0 > 0 => Some((current.0 - 1, current.1)),
 			Direction::Left if current.1 > 0 => Some((current.0, current.1 - 1)),
@@ -622,17 +608,11 @@ impl Map {
 	}
 }
 
-fn build_path(
-	mut from_to: HashMap<(usize, usize), Option<(usize, usize)>>,
-	to: (usize, usize),
-) -> Vec<Direction> {
+fn build_path(mut from_to: HashMap<(usize, usize), Option<(usize, usize)>>, to: (usize, usize)) -> Vec<Direction> {
 	if let Some(Some(from)) = from_to.remove(&to) {
 		let mut part = build_path(from_to, from);
 		part.push(
-			match (
-				(from.0 as isize) - (to.0 as isize),
-				(from.1 as isize) - (to.1 as isize),
-			) {
+			match ((from.0 as isize) - (to.0 as isize), (from.1 as isize) - (to.1 as isize)) {
 				(1, 0) => Direction::Up,
 				(0, 1) => Direction::Left,
 				(0, -1) => Direction::Right,
@@ -672,14 +652,7 @@ impl fmt::Display for Map {
 				below[c + 1].set_left(self.map[r * 2 + 1][c]);
 			}
 
-			writeln!(
-				f,
-				"{}",
-				above
-					.into_iter()
-					.map(|j| format!("{}", j))
-					.collect::<String>()
-			)?;
+			writeln!(f, "{}", above.into_iter().map(|j| format!("{}", j)).collect::<String>())?;
 		}
 
 		above = below;
@@ -691,21 +664,7 @@ impl fmt::Display for Map {
 			below[c + 1].set_up(self.map[self.rows * 2 - 2][c]);
 		}
 
-		writeln!(
-			f,
-			"{}",
-			above
-				.into_iter()
-				.map(|j| format!("{}", j))
-				.collect::<String>()
-		)?;
-		write!(
-			f,
-			"{}",
-			below
-				.into_iter()
-				.map(|j| format!("{}", j))
-				.collect::<String>()
-		)
+		writeln!(f, "{}", above.into_iter().map(|j| format!("{}", j)).collect::<String>())?;
+		write!(f, "{}", below.into_iter().map(|j| format!("{}", j)).collect::<String>())
 	}
 }

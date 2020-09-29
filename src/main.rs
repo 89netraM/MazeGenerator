@@ -100,9 +100,7 @@ fn main() {
 	let delay = get_arg_as_t(&matches, "DELAY");
 
 	let mut stdout = stdout();
-	stdout
-		.execute(cursor::Hide)
-		.expect("Could not hide cursor.");
+	stdout.execute(cursor::Hide).expect("Could not hide cursor.");
 	let initial_peek_fn = |map: &Map| println!("{}", map);
 	let peek_fn = |map: &Map, pos: &(usize, usize), dir: &Direction| {
 		let chars = map.get_chars(pos, dir);
@@ -110,40 +108,25 @@ fn main() {
 		let columns = pos.1 as u16 + if dir == &Direction::Right { 1 } else { 0 };
 
 		if dir == &Direction::Left || dir == &Direction::Right {
-			stdout
-				.queue(cursor::MoveUp(rows + 1))
-				.expect("Could not move cursor.");
+			stdout.queue(cursor::MoveUp(rows + 1)).expect("Could not move cursor.");
 			if columns > 0 {
 				stdout
 					.queue(cursor::MoveRight(columns))
 					.expect("Could not move cursor.");
 			}
-			stdout
-				.write_fmt(format_args!("{}", chars.0))
-				.expect("Could not write.");
-			stdout
-				.queue(cursor::MoveDown(1))
-				.expect("Could not move cursor.");
-			stdout
-				.queue(cursor::MoveLeft(1))
-				.expect("Could not move cursor.");
-			stdout
-				.write_fmt(format_args!("{}", chars.1))
-				.expect("Could not write.");
+			stdout.write_fmt(format_args!("{}", chars.0)).expect("Could not write.");
+			stdout.queue(cursor::MoveDown(1)).expect("Could not move cursor.");
+			stdout.queue(cursor::MoveLeft(1)).expect("Could not move cursor.");
+			stdout.write_fmt(format_args!("{}", chars.1)).expect("Could not write.");
 			stdout
 				.queue(cursor::MoveLeft(columns + 1))
 				.expect("Could not move cursor.");
 			if rows > 0 {
-				stdout
-					.queue(cursor::MoveDown(rows))
-					.expect("Could not move cursor.");
+				stdout.queue(cursor::MoveDown(rows)).expect("Could not move cursor.");
 			}
-		}
-		else {
+		} else {
 			if rows > 0 {
-				stdout
-					.queue(cursor::MoveUp(rows))
-					.expect("Could not move cursor.");
+				stdout.queue(cursor::MoveUp(rows)).expect("Could not move cursor.");
 			}
 			if columns > 0 {
 				stdout
@@ -157,9 +140,7 @@ fn main() {
 				.queue(cursor::MoveLeft(columns + 2))
 				.expect("Could not move cursor.");
 			if rows > 0 {
-				stdout
-					.queue(cursor::MoveDown(rows))
-					.expect("Could not move cursor.");
+				stdout.queue(cursor::MoveDown(rows)).expect("Could not move cursor.");
 			}
 		}
 		stdout.flush().expect("Could not flush.");
@@ -171,42 +152,20 @@ fn main() {
 	let map = if matches.is_present("TREE") {
 		Map::generate_three(rows, columns, initial_peek_fn, peek_fn)
 	} else if matches.is_present("PRIM") {
-		Map::generate_prim(
-			rows,
-			columns,
-			(start_row, start_column),
-			initial_peek_fn,
-			peek_fn,
-		)
+		Map::generate_prim(rows, columns, (start_row, start_column), initial_peek_fn, peek_fn)
 	} else if matches.is_present("AB") {
-		Map::generate_ab(
-			rows,
-			columns,
-			(start_row, start_column),
-			initial_peek_fn,
-			peek_fn,
-		)
+		Map::generate_ab(rows, columns, (start_row, start_column), initial_peek_fn, peek_fn)
 	} else if matches.is_present("DIV") {
 		Map::generate_div(rows, columns, initial_peek_fn, peek_fn)
 	} else {
-		Map::generate_dfs(
-			rows,
-			columns,
-			(start_row, start_column),
-			initial_peek_fn,
-			peek_fn,
-		)
+		Map::generate_dfs(rows, columns, (start_row, start_column), initial_peek_fn, peek_fn)
 	};
-	stdout
-		.execute(cursor::Show)
-		.expect("Could not show cursor.");
+	stdout.execute(cursor::Show).expect("Could not show cursor.");
 
 	if let Some(path) = map.solve((0, 0), (map.rows - 1, map.columns - 1)) {
 		println!(
 			"Path: {}",
-			path.into_iter()
-				.map(|d| format!("{}", d))
-				.collect::<String>()
+			path.into_iter().map(|d| format!("{}", d)).collect::<String>()
 		);
 	}
 	else {
