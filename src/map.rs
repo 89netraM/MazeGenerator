@@ -282,17 +282,24 @@ impl Map {
 
 		let mut visited = HashSet::new();
 		visited.insert(start);
-		let total_cells = map.rows * map.columns;
+		let mut has_neighbors = vec![start];
 
-		while visited.len() < total_cells {
-			let next = visited.iter().skip((rng.gen::<f32>() * visited.len() as f32 - 1.0).floor() as usize).next().unwrap();
-			let dir = DIRECTIONS.choose(&mut rng).unwrap();
-			if let Some(moved) = map.move_in_direction(next, dir) {
-				if !visited.contains(&moved) {
-					map.set(next.0, next.1, dir, false);
-					peek(&map, &next, dir);
-					visited.insert(moved.clone());
-				}
+		while has_neighbors.len() > 0 {
+			let index = rng.gen_range(0, has_neighbors.len());
+			let next = has_neighbors[index];
+			let moved_positions = DIRECTIONS
+				.iter()
+				.filter_map(|d| map.move_in_direction(&next, d).map(|m| (m, d)))
+				.filter(|(m, _)| !visited.contains(&m)).collect::<Vec<((usize, usize), &Direction)>>();
+			if moved_positions.len() <= 1 {
+				has_neighbors.remove(index);
+			}
+			if moved_positions.len() > 0 {
+				let moved = moved_positions.choose(&mut rng).unwrap();
+				map.set(next.0, next.1, moved.1, false);
+				peek(&map, &next, moved.1);
+				visited.insert(moved.0);
+				has_neighbors.push(moved.0);
 			}
 		}
 
