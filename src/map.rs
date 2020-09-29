@@ -188,7 +188,7 @@ impl Map {
 		map
 	}
 
-	pub fn generate_three<F, G>(rows: usize, columns: usize, mut initial_peek: F, mut peek: G) -> Map
+	pub fn generate_tree<F, G>(rows: usize, columns: usize, mut initial_peek: F, mut peek: G) -> Map
 	where
 		F: FnMut(&Map),
 		G: FnMut(&Map, &(usize, usize), &Direction),

@@ -150,7 +150,7 @@ fn main() {
 		}
 	};
 	let map = if matches.is_present("TREE") {
-		Map::generate_three(rows, columns, initial_peek_fn, peek_fn)
+		Map::generate_tree(rows, columns, initial_peek_fn, peek_fn)
 	} else if matches.is_present("PRIM") {
 		Map::generate_prim(rows, columns, (start_row, start_column), initial_peek_fn, peek_fn)
 	} else if matches.is_present("AB") {
