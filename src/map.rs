@@ -16,14 +16,11 @@ const DOWN: usize = 0b0001;
 pub struct WallJunction(usize);
 
 impl WallJunction {
-	pub fn new() -> WallJunction {
-		WallJunction(0)
-	}
-
 	fn set(&mut self, bit: usize, activate: bool) {
 		if activate {
 			self.0 |= bit;
-		} else {
+		}
+		else {
 			self.0 &= !bit;
 		}
 	}
@@ -57,6 +54,12 @@ impl WallJunction {
 	}
 }
 
+impl Default for WallJunction {
+	fn default() -> Self {
+		WallJunction(0)
+	}
+}
+
 impl From<WallJunction> for char {
 	fn from(wj: WallJunction) -> Self {
 		match wj.0 {
@@ -82,7 +85,7 @@ impl From<WallJunction> for char {
 
 impl fmt::Display for WallJunction {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "{}", char::from(self.clone()))
+		write!(f, "{}", char::from(*self))
 	}
 }
 
@@ -136,7 +139,8 @@ impl Map {
 		for r in 0..(rows * 2 - 1) {
 			if r % 2 == 0 {
 				map.push(vec![value; columns - 1]);
-			} else {
+			}
+			else {
 				map.push(vec![value; columns]);
 			}
 		}
@@ -173,14 +177,15 @@ impl Map {
 			let moved_positions = DIRECTIONS
 				.iter()
 				.filter_map(|d| map.move_in_direction(&next, d).map(|m| (m, d)))
-				.filter(|(m, _)| !visited.contains(&m)).collect::<Vec<((usize, usize), &Direction)>>();
+				.filter(|(m, _)| !visited.contains(&m))
+				.collect::<Vec<((usize, usize), &Direction)>>();
 			if moved_positions.len() > 1 {
 				to_visit.push(next);
 			}
 			if let Some((moved, dir)) = moved_positions.choose(&mut rng) {
 				map.set(next.0, next.1, dir, false);
-				to_visit.push(moved.clone());
-				visited.insert(moved.clone());
+				to_visit.push(*moved);
+				visited.insert(*moved);
 				peek(&map, &next, &dir);
 			}
 		}
@@ -247,7 +252,7 @@ impl Map {
 		visited.insert(start);
 		let mut walls = map.walls_around(&start);
 
-		while walls.len() > 0 {
+		while !walls.is_empty() {
 			walls.shuffle(&mut rng);
 			let (from, dir) = walls.pop().unwrap();
 			if let Some(to) = map.move_in_direction(&from, &dir) {
@@ -284,17 +289,18 @@ impl Map {
 		visited.insert(start);
 		let mut has_neighbors = vec![start];
 
-		while has_neighbors.len() > 0 {
+		while !has_neighbors.is_empty() {
 			let index = rng.gen_range(0, has_neighbors.len());
 			let next = has_neighbors[index];
 			let moved_positions = DIRECTIONS
 				.iter()
 				.filter_map(|d| map.move_in_direction(&next, d).map(|m| (m, d)))
-				.filter(|(m, _)| !visited.contains(&m)).collect::<Vec<((usize, usize), &Direction)>>();
+				.filter(|(m, _)| !visited.contains(&m))
+				.collect::<Vec<((usize, usize), &Direction)>>();
 			if moved_positions.len() <= 1 {
 				has_neighbors.remove(index);
 			}
-			if moved_positions.len() > 0 {
+			if !moved_positions.is_empty() {
 				let moved = moved_positions.choose(&mut rng).unwrap();
 				map.set(next.0, next.1, moved.1, false);
 				peek(&map, &next, moved.1);
@@ -306,12 +312,7 @@ impl Map {
 		map
 	}
 
-	pub fn generate_div<F, G>(
-		rows: usize,
-		columns: usize,
-		mut initial_peek: F,
-		mut peek: G,
-	) -> Map
+	pub fn generate_div<F, G>(rows: usize, columns: usize, mut initial_peek: F, mut peek: G) -> Map
 	where
 		F: FnMut(&Map),
 		G: FnMut(&Map, &(usize, usize), &Direction),
@@ -468,7 +469,7 @@ impl Map {
 			.iter()
 			.filter_map(|dir| {
 				if self.is(pos.0, pos.1, dir) == Some(true) {
-					return Some((pos.clone(), dir.clone()));
+					return Some((*pos, *dir));
 				}
 				None
 			})
@@ -517,8 +518,8 @@ impl Map {
 
 	pub fn get_chars(&self, pos: &(usize, usize), dir: &Direction) -> (char, char) {
 		if dir == &Direction::Left || dir == &Direction::Right {
-			let mut above = WallJunction::new();
-			let mut below = WallJunction::new();
+			let mut above = WallJunction::default();
+			let mut below = WallJunction::default();
 
 			if self.is(pos.0, pos.1, dir).unwrap_or(true) {
 				above.set_down(true);
@@ -568,8 +569,8 @@ impl Map {
 			(char::from(above), char::from(below))
 		}
 		else {
-			let mut left = WallJunction::new();
-			let mut right = WallJunction::new();
+			let mut left = WallJunction::default();
+			let mut right = WallJunction::default();
 
 			if self.is(pos.0, pos.1, dir).unwrap_or(true) {
 				left.set_right(true);
@@ -640,7 +641,8 @@ fn build_path(
 			},
 		);
 		part
-	} else {
+	}
+	else {
 		Vec::new()
 	}
 }
@@ -656,7 +658,7 @@ impl fmt::Display for Map {
 
 		for r in 0..(self.rows - 1) {
 			above = below;
-			below = vec![WallJunction::new(); self.columns + 1];
+			below = vec![WallJunction::default(); self.columns + 1];
 			below[0] = VERTICAL;
 			below[self.columns] = VERTICAL;
 
