@@ -9,70 +9,80 @@ use std::str::FromStr;
 use std::{thread, time::Duration};
 
 mod map;
-use map::Map;
 use map::Direction;
+use map::Map;
 
 fn main() {
 	let matches = App::new("Maze Generator")
-		.arg(Arg::with_name("ROWS")
-			.long("rows")
-			.default_value("5")
-			.validator(check_arg_is_number)
-			.help("Number of rows of the generated map")
-			.display_order(0),
+		.arg(
+			Arg::with_name("ROWS")
+				.long("rows")
+				.default_value("5")
+				.validator(check_arg_is_number)
+				.help("Number of rows of the generated map")
+				.display_order(0),
 		)
-		.arg(Arg::with_name("COLUMNS")
-			.long("columns")
-			.default_value("5")
-			.validator(check_arg_is_number)
-			.help("Number of columns of the generated map")
-			.display_order(1),
+		.arg(
+			Arg::with_name("COLUMNS")
+				.long("columns")
+				.default_value("5")
+				.validator(check_arg_is_number)
+				.help("Number of columns of the generated map")
+				.display_order(1),
 		)
-		.arg(Arg::with_name("START_ROW")
-			.long("start_row")
-			.default_value("0")
-			.validator(check_arg_is_number)
-			.help("The row to start generating from")
-			.display_order(2),
+		.arg(
+			Arg::with_name("START_ROW")
+				.long("start_row")
+				.default_value("0")
+				.validator(check_arg_is_number)
+				.help("The row to start generating from")
+				.display_order(2),
 		)
-		.arg(Arg::with_name("START_COLUMN")
-			.long("start_column")
-			.default_value("0")
-			.validator(check_arg_is_number)
-			.help("The column to start generating from")
-			.display_order(3),
+		.arg(
+			Arg::with_name("START_COLUMN")
+				.long("start_column")
+				.default_value("0")
+				.validator(check_arg_is_number)
+				.help("The column to start generating from")
+				.display_order(3),
 		)
-		.arg(Arg::with_name("DELAY")
-			.long("delay")
-			.default_value("50")
-			.validator(check_arg_is_number)
-			.help("The ms delay between steps")
-			.display_order(4),
+		.arg(
+			Arg::with_name("DELAY")
+				.long("delay")
+				.default_value("50")
+				.validator(check_arg_is_number)
+				.help("The ms delay between steps")
+				.display_order(4),
 		)
-		.arg(Arg::with_name("DFS")
-			.long("dfs")
-			.help("Use the depth first search algorithm for maze generation [default]")
-			.display_order(5)
+		.arg(
+			Arg::with_name("DFS")
+				.long("dfs")
+				.help("Use the depth first search algorithm for maze generation [default]")
+				.display_order(5),
 		)
-		.arg(Arg::with_name("TREE")
-			.long("tree")
-			.help("Use the binary tree maze algorithm for maze generation")
-			.display_order(6)
+		.arg(
+			Arg::with_name("TREE")
+				.long("tree")
+				.help("Use the binary tree maze algorithm for maze generation")
+				.display_order(6),
 		)
-		.arg(Arg::with_name("PRIM")
-			.long("prim")
-			.help("Use Prim's algorithm for maze generation")
-			.display_order(7)
+		.arg(
+			Arg::with_name("PRIM")
+				.long("prim")
+				.help("Use Prim's algorithm for maze generation")
+				.display_order(7),
 		)
-		.arg(Arg::with_name("AB")
-			.long("ab")
-			.help("Use the Aldous-Broder algorithm for maze generation")
-			.display_order(8)
+		.arg(
+			Arg::with_name("AB")
+				.long("ab")
+				.help("Use the Aldous-Broder algorithm for maze generation")
+				.display_order(8),
 		)
-		.arg(Arg::with_name("DIV")
-			.long("div")
-			.help("Use the recursive division method for maze generation")
-			.display_order(9)
+		.arg(
+			Arg::with_name("DIV")
+				.long("div")
+				.help("Use the recursive division method for maze generation")
+				.display_order(9),
 		)
 		.group(ArgGroup::with_name("ALGORITHM").args(&[
 			"DFS",
@@ -152,9 +162,7 @@ fn main() {
 					.expect("Could not move cursor.");
 			}
 		}
-		stdout
-			.flush()
-			.expect("Could not flush.");
+		stdout.flush().expect("Could not flush.");
 
 		if delay > 0 {
 			thread::sleep(Duration::from_millis(delay));
@@ -163,13 +171,31 @@ fn main() {
 	let map = if matches.is_present("TREE") {
 		Map::generate_three(rows, columns, initial_peek_fn, peek_fn)
 	} else if matches.is_present("PRIM") {
-		Map::generate_prim(rows, columns, (start_row, start_column), initial_peek_fn, peek_fn)
+		Map::generate_prim(
+			rows,
+			columns,
+			(start_row, start_column),
+			initial_peek_fn,
+			peek_fn,
+		)
 	} else if matches.is_present("AB") {
-		Map::generate_ab(rows, columns, (start_row, start_column), initial_peek_fn, peek_fn)
+		Map::generate_ab(
+			rows,
+			columns,
+			(start_row, start_column),
+			initial_peek_fn,
+			peek_fn,
+		)
 	} else if matches.is_present("DIV") {
 		Map::generate_div(rows, columns, initial_peek_fn, peek_fn)
 	} else {
-		Map::generate_dfs(rows, columns, (start_row, start_column), initial_peek_fn, peek_fn)
+		Map::generate_dfs(
+			rows,
+			columns,
+			(start_row, start_column),
+			initial_peek_fn,
+			peek_fn,
+		)
 	};
 	stdout
 		.execute(cursor::Show)
@@ -182,7 +208,8 @@ fn main() {
 				.map(|d| format!("{}", d))
 				.collect::<String>()
 		);
-	} else {
+	}
+	else {
 		println!("No path through maze");
 	}
 }
