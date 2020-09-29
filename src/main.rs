@@ -1,8 +1,6 @@
-extern crate crossterm;
 use crossterm::{cursor, ExecutableCommand, QueueableCommand};
 use std::io::{stdout, Write};
 
-extern crate clap;
 use clap::{App, Arg, ArgGroup, ArgMatches};
 use std::str::FromStr;
 

@@ -1,4 +1,3 @@
-extern crate rand;
 use rand::seq::SliceRandom;
 use rand::{thread_rng, Rng};
 
