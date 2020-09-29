@@ -120,6 +120,14 @@ const VERTICAL: WallJunction = WallJunction(UP | DOWN);
 
 const DIRECTIONS: [Direction; 4] = [Direction::Up, Direction::Left, Direction::Right, Direction::Down];
 
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
+pub struct Position (
+	/// Row
+	pub usize,
+	/// Column
+	pub usize,
+);
+
 pub struct Map {
 	pub rows: usize,
 	pub columns: usize,
@@ -151,13 +159,13 @@ impl Map {
 	pub fn generate_dfs<F, G>(
 		rows: usize,
 		columns: usize,
-		start: (usize, usize),
+		start: Position,
 		mut initial_peek: F,
 		mut peek: G,
 	) -> Map
 	where
 		F: FnMut(&Map),
-		G: FnMut(&Map, &(usize, usize), &Direction),
+		G: FnMut(&Map, &Position, &Direction),
 	{
 		let mut map = Map::new(rows, columns);
 		initial_peek(&map);
@@ -172,12 +180,12 @@ impl Map {
 				.iter()
 				.filter_map(|d| map.move_in_direction(&next, d).map(|m| (m, d)))
 				.filter(|(m, _)| !visited.contains(&m))
-				.collect::<Vec<((usize, usize), &Direction)>>();
+				.collect::<Vec<(Position, &Direction)>>();
 			if moved_positions.len() > 1 {
 				to_visit.push(next);
 			}
 			if let Some((moved, dir)) = moved_positions.choose(&mut rng) {
-				map.set(next.0, next.1, dir, false);
+				map.set(&next, dir, false);
 				to_visit.push(*moved);
 				visited.insert(*moved);
 				peek(&map, &next, &dir);
@@ -190,31 +198,31 @@ impl Map {
 	pub fn generate_tree<F, G>(rows: usize, columns: usize, mut initial_peek: F, mut peek: G) -> Map
 	where
 		F: FnMut(&Map),
-		G: FnMut(&Map, &(usize, usize), &Direction),
+		G: FnMut(&Map, &Position, &Direction),
 	{
 		let mut map = Map::new(rows, columns);
 		initial_peek(&map);
 
 		for c in 1..map.columns {
-			map.set_left(0, c, false);
+			map.set_left(&Position(0, c), false);
 
-			peek(&map, &(0, c), &Direction::Left);
+			peek(&map, &Position(0, c), &Direction::Left);
 		}
 		for r in 1..map.rows {
-			map.set_above(r, 0, false);
+			map.set_above(&Position(r, 0), false);
 
-			peek(&map, &(r, 0), &Direction::Up);
+			peek(&map, &Position(r, 0), &Direction::Up);
 		}
 
 		for r in 1..map.rows {
 			for c in 1..map.columns {
 				if rand::random() {
-					map.set_left(r, c, false);
-					peek(&map, &(r, c), &Direction::Left);
+					map.set_left(&Position(r, c), false);
+					peek(&map, &Position(r, c), &Direction::Left);
 				}
 				else {
-					map.set_above(r, c, false);
-					peek(&map, &(r, c), &Direction::Up);
+					map.set_above(&Position(r, c), false);
+					peek(&map, &Position(r, c), &Direction::Up);
 				}
 			}
 		}
@@ -225,13 +233,13 @@ impl Map {
 	pub fn generate_prim<F, G>(
 		rows: usize,
 		columns: usize,
-		start: (usize, usize),
+		start: Position,
 		mut initial_peek: F,
 		mut peek: G,
 	) -> Map
 	where
 		F: FnMut(&Map),
-		G: FnMut(&Map, &(usize, usize), &Direction),
+		G: FnMut(&Map, &Position, &Direction),
 	{
 		let mut map = Map::new(rows, columns);
 		initial_peek(&map);
@@ -246,7 +254,7 @@ impl Map {
 			let (from, dir) = walls.pop().unwrap();
 			if let Some(to) = map.move_in_direction(&from, &dir) {
 				if !visited.contains(&to) {
-					map.set(from.0, from.1, &dir, false);
+					map.set(&from, &dir, false);
 
 					visited.insert(to);
 					walls.append(&mut map.walls_around(&to));
@@ -262,13 +270,13 @@ impl Map {
 	pub fn generate_ab<F, G>(
 		rows: usize,
 		columns: usize,
-		start: (usize, usize),
+		start: Position,
 		mut initial_peek: F,
 		mut peek: G,
 	) -> Map
 	where
 		F: FnMut(&Map),
-		G: FnMut(&Map, &(usize, usize), &Direction),
+		G: FnMut(&Map, &Position, &Direction),
 	{
 		let mut map = Map::new(rows, columns);
 		initial_peek(&map);
@@ -285,13 +293,13 @@ impl Map {
 				.iter()
 				.filter_map(|d| map.move_in_direction(&next, d).map(|m| (m, d)))
 				.filter(|(m, _)| !visited.contains(&m))
-				.collect::<Vec<((usize, usize), &Direction)>>();
+				.collect::<Vec<(Position, &Direction)>>();
 			if moved_positions.len() <= 1 {
 				has_neighbors.remove(index);
 			}
 			if !moved_positions.is_empty() {
 				let moved = moved_positions.choose(&mut rng).unwrap();
-				map.set(next.0, next.1, moved.1, false);
+				map.set(&next, moved.1, false);
 				peek(&map, &next, moved.1);
 				visited.insert(moved.0);
 				has_neighbors.push(moved.0);
@@ -304,17 +312,17 @@ impl Map {
 	pub fn generate_div<F, G>(rows: usize, columns: usize, mut initial_peek: F, mut peek: G) -> Map
 	where
 		F: FnMut(&Map),
-		G: FnMut(&Map, &(usize, usize), &Direction),
+		G: FnMut(&Map, &Position, &Direction),
 	{
 		fn recurse_vertical<R, G>(
 			map: &mut Map,
 			rng: &mut R,
-			upper_left: (usize, usize),
-			lower_right: (usize, usize),
+			upper_left: Position,
+			lower_right: Position,
 			peek: &mut G,
 		) where
 			R: Rng + ?Sized,
-			G: FnMut(&Map, &(usize, usize), &Direction),
+			G: FnMut(&Map, &Position, &Direction),
 		{
 			if upper_left.1 < lower_right.1 {
 				let div = rng.gen_range(upper_left.1, lower_right.1);
@@ -322,30 +330,30 @@ impl Map {
 
 				for r in upper_left.0..(lower_right.0 + 1) {
 					if r != passage {
-						map.set_right(r, div, true);
-						peek(&map, &(r, div), &Direction::Right);
+						map.set_right(&Position(r, div), true);
+						peek(&map, &Position(r, div), &Direction::Right);
 					}
 				}
 
 				if upper_left.0 >= lower_right.0 {
-					recurse_vertical(map, rng, upper_left, (lower_right.0, div), peek);
-					recurse_vertical(map, rng, (upper_left.0, div + 1), lower_right, peek);
+					recurse_vertical(map, rng, upper_left, Position(lower_right.0, div), peek);
+					recurse_vertical(map, rng, Position(upper_left.0, div + 1), lower_right, peek);
 				}
 				else {
-					recurse_horizontal(map, rng, upper_left, (lower_right.0, div), peek);
-					recurse_horizontal(map, rng, (upper_left.0, div + 1), lower_right, peek);
+					recurse_horizontal(map, rng, upper_left, Position(lower_right.0, div), peek);
+					recurse_horizontal(map, rng, Position(upper_left.0, div + 1), lower_right, peek);
 				}
 			}
 		}
 		fn recurse_horizontal<R, G>(
 			map: &mut Map,
 			rng: &mut R,
-			upper_left: (usize, usize),
-			lower_right: (usize, usize),
+			upper_left: Position,
+			lower_right: Position,
 			peek: &mut G,
 		) where
 			R: Rng + ?Sized,
-			G: FnMut(&Map, &(usize, usize), &Direction),
+			G: FnMut(&Map, &Position, &Direction),
 		{
 			if upper_left.0 < lower_right.0 {
 				let div = rng.gen_range(upper_left.0, lower_right.0);
@@ -353,18 +361,18 @@ impl Map {
 
 				for c in upper_left.1..(lower_right.1 + 1) {
 					if c != passage {
-						map.set_below(div, c, true);
-						peek(&map, &(div, c), &Direction::Down);
+						map.set_below(&Position(div, c), true);
+						peek(&map, &Position(div, c), &Direction::Down);
 					}
 				}
 
 				if upper_left.1 >= lower_right.1 {
-					recurse_horizontal(map, rng, upper_left, (div, lower_right.1), peek);
-					recurse_horizontal(map, rng, (div + 1, upper_left.1), lower_right, peek);
+					recurse_horizontal(map, rng, upper_left, Position(div, lower_right.1), peek);
+					recurse_horizontal(map, rng, Position(div + 1, upper_left.1), lower_right, peek);
 				}
 				else {
-					recurse_vertical(map, rng, upper_left, (div, lower_right.1), peek);
-					recurse_vertical(map, rng, (div + 1, upper_left.1), lower_right, peek);
+					recurse_vertical(map, rng, upper_left, Position(div, lower_right.1), peek);
+					recurse_vertical(map, rng, Position(div + 1, upper_left.1), lower_right, peek);
 				}
 			}
 		}
@@ -373,87 +381,87 @@ impl Map {
 		initial_peek(&map);
 		let mut rng = thread_rng();
 
-		let upper_left = (0, 0);
-		let lower_right = (map.rows - 1, map.columns - 1);
+		let upper_left = Position(0, 0);
+		let lower_right = Position(map.rows - 1, map.columns - 1);
 		recurse_vertical(&mut map, &mut rng, upper_left, lower_right, &mut peek);
 
 		map
 	}
 
-	pub fn set_above(&mut self, r: usize, c: usize, closed: bool) {
-		assert!(0 < r && r < self.rows && c < self.columns);
+	pub fn set_above(&mut self, pos: &Position, closed: bool) {
+		assert!(0 < pos.0 && pos.0 < self.rows && pos.1 < self.columns);
 
-		self.map[(r * 2) - 1][c] = closed;
+		self.map[(pos.0 * 2) - 1][pos.1] = closed;
 	}
-	pub fn is_above(&self, r: usize, c: usize) -> bool {
-		assert!(0 < r && r < self.rows && c < self.columns);
+	pub fn is_above(&self, pos: &Position) -> bool {
+		assert!(0 < pos.0 && pos.0 < self.rows && pos.1 < self.columns);
 
-		self.map[(r * 2) - 1][c]
+		self.map[(pos.0 * 2) - 1][pos.1]
 	}
-	pub fn set_left(&mut self, r: usize, c: usize, closed: bool) {
-		assert!(r < self.rows && 0 < c && c < self.columns);
+	pub fn set_left(&mut self, pos: &Position, closed: bool) {
+		assert!(pos.0 < self.rows && 0 < pos.1 && pos.1 < self.columns);
 
-		self.map[r * 2][c - 1] = closed;
+		self.map[pos.0 * 2][pos.1 - 1] = closed;
 	}
-	pub fn is_left(&self, r: usize, c: usize) -> bool {
-		assert!(r < self.rows && 0 < c && c < self.columns);
+	pub fn is_left(&self, pos: &Position) -> bool {
+		assert!(pos.0 < self.rows && 0 < pos.1 && pos.1 < self.columns);
 
-		self.map[r * 2][c - 1]
+		self.map[pos.0 * 2][pos.1 - 1]
 	}
-	pub fn set_right(&mut self, r: usize, c: usize, closed: bool) {
-		assert!(r < self.rows && c < self.columns - 1);
+	pub fn set_right(&mut self, pos: &Position, closed: bool) {
+		assert!(pos.0 < self.rows && pos.1 < self.columns - 1);
 
-		self.map[r * 2][c] = closed;
+		self.map[pos.0 * 2][pos.1] = closed;
 	}
-	pub fn is_right(&self, r: usize, c: usize) -> bool {
-		assert!(r < self.rows && c < self.columns - 1);
+	pub fn is_right(&self, pos: &Position) -> bool {
+		assert!(pos.0 < self.rows && pos.1 < self.columns - 1);
 
-		self.map[r * 2][c]
+		self.map[pos.0 * 2][pos.1]
 	}
-	pub fn set_below(&mut self, r: usize, c: usize, closed: bool) {
-		assert!(r < self.rows - 1 && c < self.columns);
+	pub fn set_below(&mut self, pos: &Position, closed: bool) {
+		assert!(pos.0 < self.rows - 1 && pos.1 < self.columns);
 
-		self.map[(r * 2) + 1][c] = closed;
+		self.map[(pos.0 * 2) + 1][pos.1] = closed;
 	}
-	pub fn is_below(&self, r: usize, c: usize) -> bool {
-		assert!(r < self.rows - 1 && c < self.columns);
+	pub fn is_below(&self, pos: &Position) -> bool {
+		assert!(pos.0 < self.rows - 1 && pos.1 < self.columns);
 
-		self.map[(r * 2) + 1][c]
+		self.map[(pos.0 * 2) + 1][pos.1]
 	}
 
-	pub fn set(&mut self, r: usize, c: usize, dir: &Direction, closed: bool) {
+	pub fn set(&mut self, pos: &Position, dir: &Direction, closed: bool) {
 		match dir {
-			Direction::Up => self.set_above(r, c, closed),
-			Direction::Left => self.set_left(r, c, closed),
-			Direction::Right => self.set_right(r, c, closed),
-			Direction::Down => self.set_below(r, c, closed),
+			Direction::Up => self.set_above(pos, closed),
+			Direction::Left => self.set_left(pos, closed),
+			Direction::Right => self.set_right(pos, closed),
+			Direction::Down => self.set_below(pos, closed),
 		};
 	}
-	pub fn is(&self, r: usize, c: usize, dir: &Direction) -> Option<bool> {
+	pub fn is(&self, pos: &Position, dir: &Direction) -> Option<bool> {
 		match dir {
-			Direction::Up if 0 < r && r < self.rows && c < self.columns => Some(self.is_above(r, c)),
-			Direction::Left if r < self.rows && 0 < c && c < self.columns => Some(self.is_left(r, c)),
-			Direction::Right if r < self.rows && c < self.columns - 1 => Some(self.is_right(r, c)),
-			Direction::Down if r < self.rows - 1 && c < self.columns => Some(self.is_below(r, c)),
+			Direction::Up if 0 < pos.0 && pos.0 < self.rows && pos.1 < self.columns => Some(self.is_above(pos)),
+			Direction::Left if pos.0 < self.rows && 0 < pos.1 && pos.1 < self.columns => Some(self.is_left(pos)),
+			Direction::Right if pos.0 < self.rows && pos.1 < self.columns - 1 => Some(self.is_right(pos)),
+			Direction::Down if pos.0 < self.rows - 1 && pos.1 < self.columns => Some(self.is_below(pos)),
 			_ => None,
 		}
 	}
 
-	fn move_in_direction(&self, current: &(usize, usize), dir: &Direction) -> Option<(usize, usize)> {
+	fn move_in_direction(&self, current: &Position, dir: &Direction) -> Option<Position> {
 		match dir {
-			Direction::Up if current.0 > 0 => Some((current.0 - 1, current.1)),
-			Direction::Left if current.1 > 0 => Some((current.0, current.1 - 1)),
-			Direction::Right if current.1 < self.columns - 1 => Some((current.0, current.1 + 1)),
-			Direction::Down if current.0 < self.rows - 1 => Some((current.0 + 1, current.1)),
+			Direction::Up if current.0 > 0 => Some(Position(current.0 - 1, current.1)),
+			Direction::Left if current.1 > 0 => Some(Position(current.0, current.1 - 1)),
+			Direction::Right if current.1 < self.columns - 1 => Some(Position(current.0, current.1 + 1)),
+			Direction::Down if current.0 < self.rows - 1 => Some(Position(current.0 + 1, current.1)),
 			_ => None,
 		}
 	}
 
-	fn walls_around(&self, pos: &(usize, usize)) -> Vec<((usize, usize), Direction)> {
+	fn walls_around(&self, pos: &Position) -> Vec<(Position, Direction)> {
 		DIRECTIONS
 			.iter()
 			.filter_map(|dir| {
-				if self.is(pos.0, pos.1, dir) == Some(true) {
+				if self.is(pos, dir) == Some(true) {
 					return Some((*pos, *dir));
 				}
 				None
@@ -461,11 +469,11 @@ impl Map {
 			.collect()
 	}
 
-	fn possible_moves_for(&self, pos: &(usize, usize)) -> Vec<(usize, usize)> {
+	fn possible_moves_for(&self, pos: &Position) -> Vec<Position> {
 		DIRECTIONS
 			.iter()
 			.filter_map(|dir| {
-				if self.is(pos.0, pos.1, dir) == Some(false) {
+				if self.is(pos, dir) == Some(false) {
 					return self.move_in_direction(pos, dir);
 				}
 				None
@@ -473,7 +481,7 @@ impl Map {
 			.collect()
 	}
 
-	pub fn solve(&self, from: (usize, usize), to: (usize, usize)) -> Option<Vec<Direction>> {
+	pub fn solve(&self, from: Position, to: Position) -> Option<Vec<Direction>> {
 		assert!(from.0 < self.rows && from.1 < self.columns);
 		assert!(to.0 < self.rows && to.1 < self.columns);
 
@@ -501,51 +509,51 @@ impl Map {
 		None
 	}
 
-	pub fn get_chars(&self, pos: &(usize, usize), dir: &Direction) -> (char, char) {
+	pub fn get_chars(&self, pos: &Position, dir: &Direction) -> (char, char) {
 		if dir == &Direction::Left || dir == &Direction::Right {
 			let mut above = WallJunction::default();
 			let mut below = WallJunction::default();
 
-			if self.is(pos.0, pos.1, dir).unwrap_or(true) {
+			if self.is(pos, dir).unwrap_or(true) {
 				above.set_down(true);
 				below.set_up(true);
 			}
 
-			if pos.0 != 0 && self.is(pos.0 - 1, pos.1, dir).unwrap_or(true) {
+			if pos.0 != 0 && self.is(&Position(pos.0 - 1, pos.1), dir).unwrap_or(true) {
 				above.set_up(true);
 			}
-			if pos.0 != self.rows - 1 && self.is(pos.0 + 1, pos.1, dir).unwrap_or(true) {
+			if pos.0 != self.rows - 1 && self.is(&Position(pos.0 + 1, pos.1), dir).unwrap_or(true) {
 				below.set_down(true);
 			}
 
 			if dir == &Direction::Left {
-				if pos.0 == 0 || self.is_above(pos.0, pos.1) {
+				if pos.0 == 0 || self.is_above(pos) {
 					above.set_right(true);
 				}
-				if pos.0 == self.rows - 1 || self.is_below(pos.0, pos.1) {
+				if pos.0 == self.rows - 1 || self.is_below(pos) {
 					below.set_right(true);
 				}
 				if pos.1 != 0 {
-					if pos.0 == 0 || self.is_above(pos.0, pos.1 - 1) {
+					if pos.0 == 0 || self.is_above(&Position(pos.0, pos.1 - 1)) {
 						above.set_left(true);
 					}
-					if pos.0 == self.rows - 1 || self.is_below(pos.0, pos.1 - 1) {
+					if pos.0 == self.rows - 1 || self.is_below(&Position(pos.0, pos.1 - 1)) {
 						below.set_left(true);
 					}
 				}
 			}
 			else {
-				if pos.0 == 0 || self.is_above(pos.0, pos.1) {
+				if pos.0 == 0 || self.is_above(pos) {
 					above.set_left(true);
 				}
-				if pos.0 == self.rows - 1 || self.is_below(pos.0, pos.1) {
+				if pos.0 == self.rows - 1 || self.is_below(pos) {
 					below.set_left(true);
 				}
 				if pos.1 != self.columns - 1 {
-					if pos.0 == 0 || self.is_above(pos.0, pos.1 + 1) {
+					if pos.0 == 0 || self.is_above(&Position(pos.0, pos.1 + 1)) {
 						above.set_right(true);
 					}
-					if pos.0 == self.rows - 1 || self.is_below(pos.0, pos.1 + 1) {
+					if pos.0 == self.rows - 1 || self.is_below(&Position(pos.0, pos.1 + 1)) {
 						below.set_right(true);
 					}
 				}
@@ -557,46 +565,46 @@ impl Map {
 			let mut left = WallJunction::default();
 			let mut right = WallJunction::default();
 
-			if self.is(pos.0, pos.1, dir).unwrap_or(true) {
+			if self.is(pos, dir).unwrap_or(true) {
 				left.set_right(true);
 				right.set_left(true);
 			}
 
-			if pos.1 != 0 && self.is(pos.0, pos.1 - 1, dir).unwrap_or(true) {
+			if pos.1 != 0 && self.is(&Position(pos.0, pos.1 - 1), dir).unwrap_or(true) {
 				left.set_left(true);
 			}
-			if pos.1 != self.columns - 1 && self.is(pos.0, pos.1 + 1, dir).unwrap_or(true) {
+			if pos.1 != self.columns - 1 && self.is(&Position(pos.0, pos.1 + 1), dir).unwrap_or(true) {
 				right.set_right(true);
 			}
 
 			if dir == &Direction::Up {
-				if pos.1 == 0 || self.is_left(pos.0, pos.1) {
+				if pos.1 == 0 || self.is_left(pos) {
 					left.set_down(true);
 				}
-				if pos.1 == self.columns - 1 || self.is_right(pos.0, pos.1) {
+				if pos.1 == self.columns - 1 || self.is_right(pos) {
 					right.set_down(true);
 				}
 				if pos.0 != 0 {
-					if pos.1 == 0 || self.is_left(pos.0 - 1, pos.1) {
+					if pos.1 == 0 || self.is_left(&Position(pos.0 - 1, pos.1)) {
 						left.set_up(true);
 					}
-					if pos.1 == self.columns - 1 || self.is_right(pos.0 - 1, pos.1) {
+					if pos.1 == self.columns - 1 || self.is_right(&Position(pos.0 - 1, pos.1)) {
 						right.set_up(true);
 					}
 				}
 			}
 			else {
-				if pos.1 == 0 || self.is_left(pos.0, pos.1) {
+				if pos.1 == 0 || self.is_left(pos) {
 					left.set_up(true);
 				}
-				if pos.1 == self.columns - 1 || self.is_right(pos.0, pos.1) {
+				if pos.1 == self.columns - 1 || self.is_right(pos) {
 					right.set_up(true);
 				}
 				if pos.0 != self.rows - 1 {
-					if pos.1 == 0 || self.is_left(pos.0 + 1, pos.1) {
+					if pos.1 == 0 || self.is_left(&Position(pos.0 + 1, pos.1)) {
 						left.set_down(true);
 					}
-					if pos.1 == self.columns - 1 || self.is_right(pos.0 + 1, pos.1) {
+					if pos.1 == self.columns - 1 || self.is_right(&Position(pos.0 + 1, pos.1)) {
 						right.set_down(true);
 					}
 				}
@@ -607,7 +615,7 @@ impl Map {
 	}
 }
 
-fn build_path(mut from_to: HashMap<(usize, usize), Option<(usize, usize)>>, to: (usize, usize)) -> Vec<Direction> {
+fn build_path(mut from_to: HashMap<Position, Option<Position>>, to: Position) -> Vec<Direction> {
 	if let Some(Some(from)) = from_to.remove(&to) {
 		let mut part = build_path(from_to, from);
 		part.push(

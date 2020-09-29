@@ -9,6 +9,7 @@ use std::{thread, time::Duration};
 mod map;
 use map::Direction;
 use map::Map;
+use map::Position;
 
 fn main() {
 	let matches = App::new("Maze Generator")
@@ -93,14 +94,13 @@ fn main() {
 
 	let rows = get_arg_as_t(&matches, "ROWS");
 	let columns = get_arg_as_t(&matches, "COLUMNS");
-	let start_row = get_arg_as_t(&matches, "START_ROW");
-	let start_column = get_arg_as_t(&matches, "START_COLUMN");
+	let start_pos = Position(get_arg_as_t(&matches, "START_ROW"), get_arg_as_t(&matches, "START_COLUMN"));
 	let delay = get_arg_as_t(&matches, "DELAY");
 
 	let mut stdout = stdout();
 	stdout.execute(cursor::Hide).expect("Could not hide cursor.");
 	let initial_peek_fn = |map: &Map| println!("{}", map);
-	let peek_fn = |map: &Map, pos: &(usize, usize), dir: &Direction| {
+	let peek_fn = |map: &Map, pos: &Position, dir: &Direction| {
 		let chars = map.get_chars(pos, dir);
 		let rows = (map.rows - pos.0) as u16 + if dir == &Direction::Up { 1 } else { 0 };
 		let columns = pos.1 as u16 + if dir == &Direction::Right { 1 } else { 0 };
@@ -150,17 +150,17 @@ fn main() {
 	let map = if matches.is_present("TREE") {
 		Map::generate_tree(rows, columns, initial_peek_fn, peek_fn)
 	} else if matches.is_present("PRIM") {
-		Map::generate_prim(rows, columns, (start_row, start_column), initial_peek_fn, peek_fn)
+		Map::generate_prim(rows, columns, start_pos, initial_peek_fn, peek_fn)
 	} else if matches.is_present("AB") {
-		Map::generate_ab(rows, columns, (start_row, start_column), initial_peek_fn, peek_fn)
+		Map::generate_ab(rows, columns, start_pos, initial_peek_fn, peek_fn)
 	} else if matches.is_present("DIV") {
 		Map::generate_div(rows, columns, initial_peek_fn, peek_fn)
 	} else {
-		Map::generate_dfs(rows, columns, (start_row, start_column), initial_peek_fn, peek_fn)
+		Map::generate_dfs(rows, columns, start_pos, initial_peek_fn, peek_fn)
 	};
 	stdout.execute(cursor::Show).expect("Could not show cursor.");
 
-	if let Some(path) = map.solve((0, 0), (map.rows - 1, map.columns - 1)) {
+	if let Some(path) = map.solve(Position(0, 0), Position(map.rows - 1, map.columns - 1)) {
 		println!(
 			"Path: {}",
 			path.into_iter().map(|d| format!("{}", d)).collect::<String>()
