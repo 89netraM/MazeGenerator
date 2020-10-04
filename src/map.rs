@@ -168,12 +168,16 @@ impl Map {
 		visited.insert(start);
 		let mut to_visit = vec![start];
 
+		let mut moved_positions = Vec::with_capacity(4);
+
 		while let Some(next) = to_visit.pop() {
-			let moved_positions = DIRECTIONS
-				.iter()
-				.filter_map(|d| map.move_in_direction(&next, d).map(|m| (m, d)))
-				.filter(|(m, _)| !visited.contains(&m))
-				.collect::<Vec<(Position, &Direction)>>();
+			moved_positions.clear();
+			moved_positions.extend(
+				DIRECTIONS
+					.iter()
+					.filter_map(|d| map.move_in_direction(&next, d).map(|m| (m, d)))
+					.filter(|(m, _)| !visited.contains(&m))
+			);
 			if moved_positions.len() > 1 {
 				to_visit.push(next);
 			}
@@ -243,8 +247,8 @@ impl Map {
 		let mut walls = map.walls_around(&start);
 
 		while !walls.is_empty() {
-			walls.shuffle(&mut rng);
-			let (from, dir) = walls.pop().unwrap();
+			let index = rng.gen_range(0, walls.len());
+			let (from, dir) = walls.remove(index);
 			if let Some(to) = map.move_in_direction(&from, &dir) {
 				if !visited.contains(&to) {
 					map.set(&from, &dir, false);
@@ -279,14 +283,18 @@ impl Map {
 		visited.insert(start);
 		let mut has_neighbors = vec![start];
 
+		let mut moved_positions = Vec::with_capacity(4);
+
 		while !has_neighbors.is_empty() {
 			let index = rng.gen_range(0, has_neighbors.len());
 			let next = has_neighbors[index];
-			let moved_positions = DIRECTIONS
-				.iter()
-				.filter_map(|d| map.move_in_direction(&next, d).map(|m| (m, d)))
-				.filter(|(m, _)| !visited.contains(&m))
-				.collect::<Vec<(Position, &Direction)>>();
+			moved_positions.clear();
+			moved_positions.extend(
+				DIRECTIONS
+					.iter()
+					.filter_map(|d| map.move_in_direction(&next, d).map(|m| (m, d)))
+					.filter(|(m, _)| !visited.contains(&m))
+			);
 			if moved_positions.len() <= 1 {
 				has_neighbors.remove(index);
 			}
