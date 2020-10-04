@@ -131,23 +131,16 @@ pub struct Position (
 pub struct Map {
 	pub rows: usize,
 	pub columns: usize,
-	map: Vec<Vec<bool>>,
+	map: Box<[bool]>,
 }
 
 impl Map {
 	fn new_with_value(rows: usize, columns: usize, value: bool) -> Map {
-		let mut map = Vec::with_capacity(rows * 2 - 1);
-
-		for r in 0..(rows * 2 - 1) {
-			if r % 2 == 0 {
-				map.push(vec![value; columns - 1]);
-			}
-			else {
-				map.push(vec![value; columns]);
-			}
+		Map {
+			rows,
+			columns,
+			map: vec![value; rows * 2 * columns - (rows + columns)].into_boxed_slice()
 		}
-
-		Map { rows, columns, map }
 	}
 	pub fn new(rows: usize, columns: usize) -> Map {
 		Map::new_with_value(rows, columns, true)
@@ -403,22 +396,22 @@ impl Map {
 	pub fn set_right(&mut self, pos: &Position, closed: bool) {
 		assert!(pos.0 < self.rows && pos.1 < self.columns - 1);
 
-		self.map[pos.0 * 2][pos.1] = closed;
+		self.map[(self.rows - 1) * self.columns + pos.0 * (self.columns - 1) + pos.1] = closed;
 	}
 	pub fn is_right(&self, pos: &Position) -> bool {
 		assert!(pos.0 < self.rows && pos.1 < self.columns - 1);
 
-		self.map[pos.0 * 2][pos.1]
+		self.map[(self.rows - 1) * self.columns + pos.0 * (self.columns - 1) + pos.1]
 	}
 	pub fn set_below(&mut self, pos: &Position, closed: bool) {
 		assert!(pos.0 < self.rows - 1 && pos.1 < self.columns);
 
-		self.map[(pos.0 * 2) + 1][pos.1] = closed;
+		self.map[pos.0 * self.columns + pos.1] = closed;
 	}
 	pub fn is_below(&self, pos: &Position) -> bool {
 		assert!(pos.0 < self.rows - 1 && pos.1 < self.columns);
 
-		self.map[(pos.0 * 2) + 1][pos.1]
+		self.map[pos.0 * self.columns + pos.1]
 	}
 
 	pub fn set(&mut self, pos: &Position, dir: &Direction, closed: bool) {
