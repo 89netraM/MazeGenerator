@@ -101,7 +101,7 @@ fn main() {
 	let delay = get_arg_as_t(&matches, "DELAY");
 
 	let mut stdout = stdout();
-	stdout.execute(cursor::Hide).expect("Could not hide cursor.");
+	let did_hide = stdout.execute(cursor::Hide).is_ok();
 	let initial_peek_fn = |map: &Map| println!("{}", map);
 	let peek_fn = |map: &Map, pos: &Position, dir: &Direction| {
 		let chars = map.get_chars(pos, dir);
@@ -161,7 +161,10 @@ fn main() {
 	} else {
 		Map::generate_dfs(rows, columns, start_pos, initial_peek_fn, peek_fn)
 	};
-	stdout.execute(cursor::Show).expect("Could not show cursor.");
+
+	if did_hide {
+		stdout.execute(cursor::Show).expect("Could not show cursor.");
+	}
 
 	if let Some(path) = map.solve(Position(0, 0), Position(map.rows - 1, map.columns - 1)) {
 		println!(
