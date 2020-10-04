@@ -389,24 +389,16 @@ impl Map {
 	}
 
 	pub fn set_above(&mut self, pos: &Position, closed: bool) {
-		assert!(0 < pos.0 && pos.0 < self.rows && pos.1 < self.columns);
-
-		self.map[(pos.0 * 2) - 1][pos.1] = closed;
+		self.set_below(&Position(pos.0 - 1, pos.1), closed);
 	}
 	pub fn is_above(&self, pos: &Position) -> bool {
-		assert!(0 < pos.0 && pos.0 < self.rows && pos.1 < self.columns);
-
-		self.map[(pos.0 * 2) - 1][pos.1]
+		self.is_below(&Position(pos.0 - 1, pos.1))
 	}
 	pub fn set_left(&mut self, pos: &Position, closed: bool) {
-		assert!(pos.0 < self.rows && 0 < pos.1 && pos.1 < self.columns);
-
-		self.map[pos.0 * 2][pos.1 - 1] = closed;
+		self.set_right(&Position(pos.0, pos.1 - 1), closed);
 	}
 	pub fn is_left(&self, pos: &Position) -> bool {
-		assert!(pos.0 < self.rows && 0 < pos.1 && pos.1 < self.columns);
-
-		self.map[pos.0 * 2][pos.1 - 1]
+		self.is_right(&Position(pos.0, pos.1 - 1))
 	}
 	pub fn set_right(&mut self, pos: &Position, closed: bool) {
 		assert!(pos.0 < self.rows && pos.1 < self.columns - 1);
