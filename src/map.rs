@@ -650,13 +650,13 @@ impl fmt::Display for Map {
 			below[self.columns] = VERTICAL;
 
 			for c in 0..(self.columns - 1) {
-				above[c + 1].set_down(self.map[r * 2][c]);
-				below[c + 1].set_up(self.map[r * 2][c]);
+				above[c + 1].set_down(self.is_right(&Position(r, c)));
+				below[c + 1].set_up(self.is_right(&Position(r, c)));
 			}
 
 			for c in 0..self.columns {
-				below[c].set_right(self.map[r * 2 + 1][c]);
-				below[c + 1].set_left(self.map[r * 2 + 1][c]);
+				below[c].set_right(self.is_below(&Position(r, c)));
+				below[c + 1].set_left(self.is_below(&Position(r, c)));
 			}
 
 			writeln!(f, "{}", above.into_iter().map(|j| format!("{}", j)).collect::<String>())?;
@@ -667,8 +667,8 @@ impl fmt::Display for Map {
 		below[0] = LOWER_LEFT;
 		below[self.columns] = LOWER_RIGHT;
 		for c in 0..(self.columns - 1) {
-			above[c + 1].set_down(self.map[self.rows * 2 - 2][c]);
-			below[c + 1].set_up(self.map[self.rows * 2 - 2][c]);
+			above[c + 1].set_down(self.is_right(&Position(self.rows - 1, c)));
+			below[c + 1].set_up(self.is_right(&Position(self.rows - 1, c)));
 		}
 
 		writeln!(f, "{}", above.into_iter().map(|j| format!("{}", j)).collect::<String>())?;
