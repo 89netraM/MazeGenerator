@@ -94,7 +94,10 @@ fn main() {
 
 	let rows = get_arg_as_t(&matches, "ROWS");
 	let columns = get_arg_as_t(&matches, "COLUMNS");
-	let start_pos = Position(get_arg_as_t(&matches, "START_ROW"), get_arg_as_t(&matches, "START_COLUMN"));
+	let start_pos = Position(
+		get_arg_as_t(&matches, "START_ROW"),
+		get_arg_as_t(&matches, "START_COLUMN"),
+	);
 	let delay = get_arg_as_t(&matches, "DELAY");
 
 	let mut stdout = stdout();
@@ -165,8 +168,7 @@ fn main() {
 			"Path: {}",
 			path.into_iter().map(|d| format!("{}", d)).collect::<String>()
 		);
-	}
-	else {
+	} else {
 		println!("No path through maze");
 	}
 }
@@ -174,8 +176,7 @@ fn main() {
 fn check_arg_is_number(s: String) -> Result<(), String> {
 	if usize::from_str(&s).is_ok() {
 		Ok(())
-	}
-	else {
+	} else {
 		Err("Must be a number".to_string())
 	}
 }

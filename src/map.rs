@@ -18,8 +18,7 @@ impl WallJunction {
 	fn set(&mut self, bit: usize, activate: bool) {
 		if activate {
 			self.0 |= bit;
-		}
-		else {
+		} else {
 			self.0 &= !bit;
 		}
 	}
@@ -121,7 +120,7 @@ const VERTICAL: WallJunction = WallJunction(UP | DOWN);
 const DIRECTIONS: [Direction; 4] = [Direction::Up, Direction::Left, Direction::Right, Direction::Down];
 
 #[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
-pub struct Position (
+pub struct Position(
 	/// Row
 	pub usize,
 	/// Column
@@ -139,7 +138,7 @@ impl Map {
 		Map {
 			rows,
 			columns,
-			map: vec![value; rows * 2 * columns - (rows + columns)].into_boxed_slice()
+			map: vec![value; rows * 2 * columns - (rows + columns)].into_boxed_slice(),
 		}
 	}
 	pub fn new(rows: usize, columns: usize) -> Map {
@@ -149,13 +148,7 @@ impl Map {
 		Map::new_with_value(rows, columns, false)
 	}
 
-	pub fn generate_dfs<F, G>(
-		rows: usize,
-		columns: usize,
-		start: Position,
-		mut initial_peek: F,
-		mut peek: G,
-	) -> Map
+	pub fn generate_dfs<F, G>(rows: usize, columns: usize, start: Position, mut initial_peek: F, mut peek: G) -> Map
 	where
 		F: FnMut(&Map),
 		G: FnMut(&Map, &Position, &Direction),
@@ -176,7 +169,7 @@ impl Map {
 				DIRECTIONS
 					.iter()
 					.filter_map(|d| map.move_in_direction(&next, d).map(|m| (m, d)))
-					.filter(|(m, _)| !visited.contains(&m))
+					.filter(|(m, _)| !visited.contains(&m)),
 			);
 			if moved_positions.len() > 1 {
 				to_visit.push(next);
@@ -216,8 +209,7 @@ impl Map {
 				if rand::random() {
 					map.set_left(&Position(r, c), false);
 					peek(&map, &Position(r, c), &Direction::Left);
-				}
-				else {
+				} else {
 					map.set_above(&Position(r, c), false);
 					peek(&map, &Position(r, c), &Direction::Up);
 				}
@@ -227,13 +219,7 @@ impl Map {
 		map
 	}
 
-	pub fn generate_prim<F, G>(
-		rows: usize,
-		columns: usize,
-		start: Position,
-		mut initial_peek: F,
-		mut peek: G,
-	) -> Map
+	pub fn generate_prim<F, G>(rows: usize, columns: usize, start: Position, mut initial_peek: F, mut peek: G) -> Map
 	where
 		F: FnMut(&Map),
 		G: FnMut(&Map, &Position, &Direction),
@@ -264,13 +250,7 @@ impl Map {
 		map
 	}
 
-	pub fn generate_ab<F, G>(
-		rows: usize,
-		columns: usize,
-		start: Position,
-		mut initial_peek: F,
-		mut peek: G,
-	) -> Map
+	pub fn generate_ab<F, G>(rows: usize, columns: usize, start: Position, mut initial_peek: F, mut peek: G) -> Map
 	where
 		F: FnMut(&Map),
 		G: FnMut(&Map, &Position, &Direction),
@@ -293,7 +273,7 @@ impl Map {
 				DIRECTIONS
 					.iter()
 					.filter_map(|d| map.move_in_direction(&next, d).map(|m| (m, d)))
-					.filter(|(m, _)| !visited.contains(&m))
+					.filter(|(m, _)| !visited.contains(&m)),
 			);
 			if moved_positions.len() <= 1 {
 				has_neighbors.remove(index);
@@ -315,13 +295,8 @@ impl Map {
 		F: FnMut(&Map),
 		G: FnMut(&Map, &Position, &Direction),
 	{
-		fn recurse_vertical<R, G>(
-			map: &mut Map,
-			rng: &mut R,
-			upper_left: Position,
-			lower_right: Position,
-			peek: &mut G,
-		) where
+		fn recurse_vertical<R, G>(map: &mut Map, rng: &mut R, upper_left: Position, lower_right: Position, peek: &mut G)
+		where
 			R: Rng + ?Sized,
 			G: FnMut(&Map, &Position, &Direction),
 		{
@@ -339,8 +314,7 @@ impl Map {
 				if upper_left.0 >= lower_right.0 {
 					recurse_vertical(map, rng, upper_left, Position(lower_right.0, div), peek);
 					recurse_vertical(map, rng, Position(upper_left.0, div + 1), lower_right, peek);
-				}
-				else {
+				} else {
 					recurse_horizontal(map, rng, upper_left, Position(lower_right.0, div), peek);
 					recurse_horizontal(map, rng, Position(upper_left.0, div + 1), lower_right, peek);
 				}
@@ -370,8 +344,7 @@ impl Map {
 				if upper_left.1 >= lower_right.1 {
 					recurse_horizontal(map, rng, upper_left, Position(div, lower_right.1), peek);
 					recurse_horizontal(map, rng, Position(div + 1, upper_left.1), lower_right, peek);
-				}
-				else {
+				} else {
 					recurse_vertical(map, rng, upper_left, Position(div, lower_right.1), peek);
 					recurse_vertical(map, rng, Position(div + 1, upper_left.1), lower_right, peek);
 				}
@@ -534,8 +507,7 @@ impl Map {
 						below.set_left(true);
 					}
 				}
-			}
-			else {
+			} else {
 				if pos.0 == 0 || self.is_above(pos) {
 					above.set_left(true);
 				}
@@ -553,8 +525,7 @@ impl Map {
 			}
 
 			(char::from(above), char::from(below))
-		}
-		else {
+		} else {
 			let mut left = WallJunction::default();
 			let mut right = WallJunction::default();
 
@@ -585,8 +556,7 @@ impl Map {
 						right.set_up(true);
 					}
 				}
-			}
-			else {
+			} else {
 				if pos.1 == 0 || self.is_left(pos) {
 					left.set_up(true);
 				}
@@ -621,8 +591,7 @@ fn build_path(mut from_to: HashMap<Position, Option<Position>>, to: Position) ->
 			},
 		);
 		part
-	}
-	else {
+	} else {
 		Vec::new()
 	}
 }
