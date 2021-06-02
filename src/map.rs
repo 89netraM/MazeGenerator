@@ -261,29 +261,23 @@ impl Map {
 
 		let mut visited = HashSet::new();
 		visited.insert(start);
-		let mut has_neighbors = vec![start];
+		let mut current = start;
 
 		let mut moved_positions = Vec::with_capacity(4);
-
-		while !has_neighbors.is_empty() {
-			let index = rng.gen_range(0, has_neighbors.len());
-			let next = has_neighbors[index];
+		while visited.len() < rows * columns {
 			moved_positions.clear();
 			moved_positions.extend(
 				DIRECTIONS
 					.iter()
-					.filter_map(|d| map.move_in_direction(&next, d).map(|m| (m, d)))
-					.filter(|(m, _)| !visited.contains(&m)),
+					.filter_map(|d| map.move_in_direction(&current, d).map(|m| (m, d))),
 			);
-			if moved_positions.len() <= 1 {
-				has_neighbors.remove(index);
-			}
-			if !moved_positions.is_empty() {
-				let moved = moved_positions.choose(&mut rng).unwrap();
-				map.set(&next, moved.1, false);
-				peek(&map, &next, moved.1);
-				visited.insert(moved.0);
-				has_neighbors.push(moved.0);
+			if let Some(moved) = moved_positions.choose(&mut rng) {
+				if !visited.contains(&moved.0) {
+					map.set(&current, moved.1, false);
+					peek(&map, &current, moved.1);
+					visited.insert(moved.0);
+				}
+				current = moved.0;
 			}
 		}
 
