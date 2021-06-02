@@ -10,31 +10,31 @@ Here is a demonstration of mazes being generated with the various algorithms.
 
 ![Animated demo of the algorithm](./animations/dfs.webp)  
 [Wikipedia](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Randomized_depth-first_search)  
-[Code](./src/map.rs#L153)
+[Code](./src/map.rs#L151)
 
 ### Random Binary Tree Maze `--tree`
 
 ![Animated demo of the algorithm](./animations/tree.webp)  
 [Wikipedia](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Simple_algorithms)  
-[Code](./src/map.rs#L191)
+[Code](./src/map.rs#L188)
 
 ### Randomized Prim's algorithm `--prim`
 
 ![Animated demo of the algorithm](./animations/prim.webp)  
 [Wikipedia](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Randomized_Prim's_algorithm)  
-[Code](./src/map.rs#L231)
+[Code](./src/map.rs#L222)
 
 ### The Aldous-Broder algorithm `--ab`
 
 ![Animated demo of the algorithm](./animations/ab.webp)  
 [Wikipedia](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Aldous-Broder_algorithm)  
-[Code](./src/map.rs#L268)
+[Code](./src/map.rs#L253)
 
 ### Recursive Division Method `--div`
 
 ![Animated demo of the algorithm](./animations/div.webp)  
 [Wikipedia](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Recursive_division_method)  
-[Code](./src/map.rs#L309)
+[Code](./src/map.rs#L287)
 
 ## Usage
 
