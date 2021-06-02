@@ -36,6 +36,12 @@ Here is a demonstration of mazes being generated with the various algorithms.
 [Wikipedia](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Recursive_division_method)  
 [Code](./src/map.rs#L287)
 
+### Wilson's algorithm `--wilson`
+
+![Animated demo of the algorithm](./animations/wilson.webp)  
+[Wikipedia](https://en.wikipedia.org/wiki/Maze_generation_algorithm#Wilson's_algorithm)  
+[Code](./src/map.rs#L360)
+
 ## Usage
 
 ```
@@ -48,6 +54,7 @@ FLAGS:
         --prim     Use Prim's algorithm for maze generation
         --ab       Use the Aldous-Broder algorithm for maze generation
         --div      Use the recursive division method for maze generation
+        --wilson   Use Wilson's algorithm (loop-erased random walk) for maze generation
     -h, --help     Prints help information
 
 OPTIONS:

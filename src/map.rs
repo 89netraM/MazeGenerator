@@ -356,6 +356,57 @@ impl Map {
 		map
 	}
 
+	pub fn generate_wilson<F, G>(rows: usize, columns: usize, start: Position, mut initial_peek: F, mut peek: G) -> Map
+	where
+		F: FnMut(&Map),
+		G: FnMut(&Map, &Position, &Direction),
+	{
+		let mut map = Map::new(rows, columns);
+		initial_peek(&map);
+		let mut rng = thread_rng();
+
+		let mut in_map = HashSet::new();
+		in_map.insert(start);
+		let mut unvisited: Vec<_> = (0..rows)
+			.flat_map(|r| (0..columns).filter_map(move |c| Some(Position(r, c)).filter(|p| p != &start)))
+			.collect();
+
+		let mut path: Vec<(Position, Direction)> = Vec::new();
+		let mut moved_positions = Vec::with_capacity(4);
+		while !unvisited.is_empty() {
+			let mut current = unvisited[rng.gen_range(0, unvisited.len())];
+
+			while !in_map.contains(&current) {
+				moved_positions.clear();
+				moved_positions.extend(
+					DIRECTIONS
+						.iter()
+						.filter_map(|d| map.move_in_direction(&current, d).map(|m| (m, d))),
+				);
+				if let Some((next, direction)) = moved_positions.choose(&mut rng) {
+					if let Some(index) = path.iter().position(|p| &p.0 == next) {
+						for (p, d) in path.drain(index..).rev() {
+							map.set(&p, &d, true);
+							peek(&map, &p, &d);
+						}
+					} else {
+						map.set(&current, direction, false);
+						peek(&map, &current, direction);
+						path.push((current, **direction));
+					}
+					current = *next;
+				}
+			}
+
+			for (p, _) in path.drain(..) {
+				in_map.insert(p);
+				unvisited.swap_remove(unvisited.iter().position(|u| u == &p).unwrap());
+			}
+		}
+
+		map
+	}
+
 	pub fn set_above(&mut self, pos: &Position, closed: bool) {
 		self.set_below(&Position(pos.0 - 1, pos.1), closed);
 	}

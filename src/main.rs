@@ -83,12 +83,19 @@ fn main() {
 				.help("Use the recursive division method for maze generation")
 				.display_order(9),
 		)
+		.arg(
+			Arg::with_name("WILSON")
+				.long("wilson")
+				.help("Use Wilson's algorithm (loop-erased random walk) for maze generation")
+				.display_order(9),
+		)
 		.group(ArgGroup::with_name("ALGORITHM").args(&[
 			"DFS",
 			"TREE",
 			"PRIM",
 			"AB",
 			"DIV",
+			"WILSON",
 		]))
 		.get_matches();
 
@@ -158,6 +165,8 @@ fn main() {
 		Map::generate_ab(rows, columns, start_pos, initial_peek_fn, peek_fn)
 	} else if matches.is_present("DIV") {
 		Map::generate_div(rows, columns, initial_peek_fn, peek_fn)
+	} else if matches.is_present("WILSON") {
+		Map::generate_wilson(rows, columns, start_pos, initial_peek_fn, peek_fn)
 	} else {
 		Map::generate_dfs(rows, columns, start_pos, initial_peek_fn, peek_fn)
 	};
